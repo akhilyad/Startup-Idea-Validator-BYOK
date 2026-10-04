@@ -1,0 +1,3163 @@
+# SIFT
+
+## Product & Technical Requirements Document
+
+**Positioning:** Know what to prove before you build.
+**Product category:** AI-powered opportunity research and validation infrastructure
+**Primary user:** Founders and prospective founders
+**Secondary users:** Startup studios, accelerators, VCs, corporate innovation teams, consultants
+**Initial product:** Web application
+**MVP philosophy:** Evidence-first, interactive, explainable, research-heavy
+**Core product principle:** Sift does not predict startup success. It identifies the assumptions underlying an opportunity, gathers evidence for and against them, identifies unknowns, and recommends the highest-value validation experiments.
+
+---
+
+# 1. Executive Summary
+
+Sift converts an unstructured business idea into an **evidence-backed, falsifiable startup thesis**.
+
+A user can provide:
+
+* A raw startup idea
+* A problem statement
+* A customer complaint
+* A Reddit thread
+* A URL
+* A pasted conversation
+* A voice transcript
+* A rough business concept
+* An existing product/company they are considering building
+
+Sift decomposes the input into a structured opportunity model.
+
+It then investigates:
+
+* Problem
+* Customer
+* Jobs-to-be-done
+* Existing behavior
+* Existing alternatives
+* Pain severity
+* Market
+* Demand signals
+* Competitors
+* Substitutes
+* Pricing
+* Business model
+* Unit economics
+* Technology
+* Implementation feasibility
+* Regulation
+* Distribution
+* Switching costs
+* Defensibility
+* Timing
+* Traction evidence
+* Failure modes
+* Contradictory evidence
+
+The system produces an interactive **Evidence-Based Opportunity Report**.
+
+The central loop is:
+
+```text
+IDEA
+  ↓
+PROBLEM
+  ↓
+CUSTOMER / JTBD
+  ↓
+ASSUMPTIONS
+  ↓
+EVIDENCE
+  ↓
+COUNTER-EVIDENCE
+  ↓
+CRITICAL UNKNOWNS
+  ↓
+VALIDATION EXPERIMENTS
+  ↓
+RESULTS
+  ↓
+UPDATED THESIS
+  ↓
+BUILD / MODIFY / TEST FURTHER
+```
+
+Sift is therefore not primarily a report generator.
+
+It is an **opportunity reasoning system**.
+
+---
+
+# 2. Product Thesis
+
+## 2.1 Core problem
+
+Founders have access to enormous quantities of information but lack a structured system for turning that information into a defensible decision.
+
+The current workflow is fragmented:
+
+```text
+Idea
+ ↓
+Google
+ ↓
+Reddit
+ ↓
+ChatGPT
+ ↓
+Google Trends
+ ↓
+Competitor websites
+ ↓
+Crunchbase
+ ↓
+Market reports
+ ↓
+Random spreadsheets
+ ↓
+Gut feeling
+ ↓
+Build
+```
+
+The problem is not lack of information.
+
+The problem is lack of **structured epistemology**.
+
+The founder needs to know:
+
+> What must be true for this business to work?
+
+And:
+
+> What evidence currently supports or contradicts each assumption?
+
+And:
+
+> What is the cheapest experiment that can resolve the most important uncertainty?
+
+---
+
+# 3. Product Differentiation
+
+The following products/features already exist in the category:
+
+* AI idea scoring
+* Startup reports
+* Competitor analysis
+* Market sizing
+* Trend discovery
+* Reddit research
+* Pivot recommendations
+* Business-plan generation
+* Investor documents
+
+DimeADozen already offers substantial sourced validation reports, including named competitors, market analysis, unit economics and large citation sets.
+
+Preuve similarly combines live-source research, competitor mapping, TAM/SAM/SOM, demand signals, pivots and investor deliverables.
+
+Therefore:
+
+## Sift's primary differentiator
+
+### Evidence → Assumption → Experiment
+
+Sift explicitly separates:
+
+| State                 | Meaning                                                |
+| --------------------- | ------------------------------------------------------ |
+| **Observed fact**     | Directly supported by a source                         |
+| **Derived analysis**  | Reasoning based on multiple facts                      |
+| **Assumption**        | Something that must be true but is not yet established |
+| **Unknown**           | Insufficient evidence exists                           |
+| **Counter-evidence**  | Evidence that weakens an assumption                    |
+| **Validation result** | Evidence generated through a real-world experiment     |
+
+This distinction is foundational.
+
+---
+
+# 4. The "Challenge the Idea" Engine
+
+This is the signature feature.
+
+Most research systems naturally accumulate confirming evidence.
+
+Sift deliberately searches for evidence that could invalidate the thesis.
+
+For every major assumption, Sift asks:
+
+> "What evidence would make this assumption false?"
+
+Examples:
+
+### Assumption
+
+"Small restaurants will pay €300/month for automated inventory management."
+
+Sift searches for:
+
+* Restaurants discussing inventory problems
+* Existing manual workarounds
+* Existing software
+* Pricing of alternatives
+* Restaurant software adoption
+* Complaints about existing products
+* Restaurant margins
+* Willingness-to-pay evidence
+* Reasons restaurants reject software
+* Implementation costs
+* Churn
+* Competitors that failed
+* Failed startups in the category
+* Regulatory/operational constraints
+
+The output is not:
+
+> "This is a promising market."
+
+It is:
+
+> "Demand evidence exists, but willingness-to-pay at €300/month remains unverified. The most consequential unknown is whether the target segment considers inventory loss sufficiently expensive to justify the proposed price."
+
+Then:
+
+> "Run 10 customer interviews and offer a paid pilot."
+
+---
+
+# 5. Target Users
+
+## Primary: Founder
+
+Characteristics:
+
+* Has one or more startup ideas
+* Has limited research capacity
+* Wants evidence before investing months of development
+* Often over-attached to the initial idea
+* Needs competitor and market intelligence
+* May not know which assumptions matter most
+
+## Secondary: Serial Founder
+
+Needs:
+
+* Rapidly compare opportunities
+* Maintain multiple ideas
+* Revisit previous analyses
+* Monitor changes
+* Track validation experiments
+
+## Startup Studio
+
+Needs:
+
+* Evaluate many opportunities
+* Standardize evaluation
+* Compare research
+* Collaborate
+* Export reports
+
+## Accelerator
+
+Needs:
+
+* Evaluate applicant ideas
+* Provide structured founder feedback
+* Track portfolio opportunities
+
+## VC / Corporate Innovation
+
+Potential later market:
+
+* Opportunity discovery
+* Market intelligence
+* Competitive monitoring
+* Thesis generation
+* Internal venture evaluation
+
+These users should not drive MVP scope.
+
+---
+
+# 6. User Jobs-to-be-Done
+
+### Job 1
+
+"I have an idea. Tell me what I actually need to prove."
+
+### Job 2
+
+"I think this problem exists. Show me evidence that real people experience it."
+
+### Job 3
+
+"Show me who already does this."
+
+### Job 4
+
+"Try to kill my idea."
+
+### Job 5
+
+"Tell me what I don't know."
+
+### Job 6
+
+"Tell me what experiment I should run next."
+
+### Job 7
+
+"Show me exactly where your conclusions came from."
+
+### Job 8
+
+"Let me update the analysis after I get real-world validation."
+
+---
+
+# 7. Core Product Loop
+
+```text
+                    ┌───────────────┐
+                    │   USER IDEA   │
+                    └───────┬───────┘
+                            ↓
+                  ┌───────────────────┐
+                  │ IDEA DECOMPOSITION│
+                  └─────────┬─────────┘
+                            ↓
+                 ┌────────────────────┐
+                 │ ASSUMPTION GRAPH   │
+                 └─────────┬──────────┘
+                           ↓
+          ┌────────────────┼─────────────────┐
+          ↓                ↓                 ↓
+      MARKET           CUSTOMER          COMPETITION
+      RESEARCH         RESEARCH            RESEARCH
+          ↓                ↓                 ↓
+          └────────────────┼─────────────────┘
+                           ↓
+                 ┌────────────────────┐
+                 │ EVIDENCE ENGINE    │
+                 └─────────┬──────────┘
+                           ↓
+                 ┌────────────────────┐
+                 │ CHALLENGE THE IDEA │
+                 └─────────┬──────────┘
+                           ↓
+                 ┌────────────────────┐
+                 │ CRITICAL UNKNOWNS  │
+                 └─────────┬──────────┘
+                           ↓
+                 ┌────────────────────┐
+                 │ EXPERIMENT DESIGN  │
+                 └─────────┬──────────┘
+                           ↓
+                 ┌────────────────────┐
+                 │ UPDATED THESIS     │
+                 └────────────────────┘
+```
+
+---
+
+# 8. Input System
+
+## 8.1 Input types
+
+MVP must support:
+
+### A. Text
+
+Example:
+
+> "I want to build an AI agent that automatically handles procurement for small manufacturing companies."
+
+### B. Reddit URL
+
+Example:
+
+A Reddit post describing a recurring pain.
+
+### C. Web URL
+
+Example:
+
+Competitor page, article, product page, forum discussion.
+
+### D. Paste
+
+User can paste:
+
+* Customer interview
+* Notes
+* Conversation
+* Research
+* Problem statement
+
+### E. Voice
+
+User speaks an idea.
+
+The frontend converts speech into text and sends the transcript to Sift.
+
+Voice analysis is not a separate reasoning system.
+
+It is another input modality.
+
+---
+
+# 9. Idea Intake
+
+After submission, Sift should normalize the idea.
+
+## Extract:
+
+* Proposed customer
+* Problem
+* Proposed solution
+* Industry
+* Geography
+* Business model
+* Pricing if stated
+* Distribution model
+* Technology
+* User-provided assumptions
+* Explicit constraints
+
+Example:
+
+```text
+RAW INPUT
+
+"AI inventory management for small restaurants."
+
+↓
+NORMALIZED IDEA
+
+Customer:
+Independent restaurants with 1–10 locations
+
+Problem:
+Manual inventory management causes waste,
+stockouts and labor costs.
+
+Solution:
+AI-powered inventory forecasting and ordering.
+
+Business model:
+B2B SaaS
+
+Initial geography:
+Unknown
+
+Pricing:
+Unknown
+
+Critical assumptions:
+1. Inventory waste is material.
+2. Restaurants experience the problem frequently.
+3. Existing solutions are insufficient.
+4. Restaurants will adopt automated forecasting.
+5. Restaurants will pay enough to support viable economics.
+```
+
+The user must be able to edit this interpretation before research begins.
+
+---
+
+# 10. Assumption Engine
+
+The system automatically generates assumptions.
+
+Each assumption has:
+
+```text
+ID
+Category
+Statement
+Importance
+Current evidence
+Counter-evidence
+Confidence
+Unknowns
+Required experiment
+Status
+```
+
+Categories:
+
+* Desirability
+* Customer
+* Problem
+* Solution
+* Demand
+* Pricing
+* Business model
+* Market
+* Competition
+* Distribution
+* Technology
+* Operations
+* Regulation
+* Economics
+* Defensibility
+* Timing
+
+---
+
+# 11. Assumption Criticality
+
+Do NOT create an overall "idea score."
+
+Instead, determine which assumptions are decision-critical.
+
+Example:
+
+```text
+CRITICAL ASSUMPTIONS
+
+A1  Problem severity          HIGH
+A2  Willingness to pay        HIGH
+A3  Competitive differentiation HIGH
+A4  Technical feasibility     MEDIUM
+A5  Regulatory complexity     LOW
+```
+
+Each assumption should have:
+
+### Importance
+
+How damaging would it be if false?
+
+### Evidence strength
+
+How much credible evidence currently supports it?
+
+### Uncertainty
+
+How much remains unknown?
+
+This produces a prioritization matrix without pretending that startup success can be reduced to a precise number.
+
+---
+
+# 12. Research Engine
+
+Research should be modular.
+
+## Research agents
+
+### Agent 1 — Problem Researcher
+
+Finds:
+
+* complaints
+* pain points
+* user discussions
+* workarounds
+* frequency
+* severity
+* current processes
+
+### Agent 2 — Customer Researcher
+
+Identifies:
+
+* customer segments
+* buyer
+* user
+* economic buyer
+* decision maker
+* relevant communities
+
+### Agent 3 — Competitor Researcher
+
+Finds:
+
+* direct competitors
+* indirect competitors
+* substitutes
+* adjacent products
+* failed competitors
+* emerging competitors
+
+### Agent 4 — Market Researcher
+
+Researches:
+
+* market size
+* growth
+* industry structure
+* demand signals
+* relevant macro trends
+
+### Agent 5 — Pricing Researcher
+
+Researches:
+
+* competitor pricing
+* customer spending
+* pricing models
+* substitutes
+* willingness-to-pay proxies
+
+### Agent 6 — Technology Researcher
+
+Researches:
+
+* required technology
+* existing technical approaches
+* infrastructure
+* APIs
+* open-source alternatives
+* technical limitations
+* implementation complexity
+
+### Agent 7 — Regulation Researcher
+
+Researches applicable:
+
+* laws
+* regulations
+* licenses
+* privacy requirements
+* industry requirements
+* geographic restrictions
+
+### Agent 8 — Economics Researcher
+
+Analyzes:
+
+* revenue model
+* gross margin
+* CAC assumptions
+* pricing
+* COGS
+* retention assumptions
+* payback
+* contribution margin
+
+### Agent 9 — GTM Researcher
+
+Analyzes:
+
+* acquisition channels
+* communities
+* distribution
+* partnerships
+* sales cycle
+* incumbent channels
+* switching friction
+
+### Agent 10 — Defensibility Researcher
+
+Analyzes:
+
+* network effects
+* proprietary data
+* workflow lock-in
+* distribution advantage
+* switching costs
+* brand
+* technical moat
+* regulatory moat
+
+### Agent 11 — Counter-Evidence Researcher
+
+Specifically searches for:
+
+* failures
+* negative reviews
+* abandoned products
+* low adoption
+* complaints
+* regulatory obstacles
+* technical failures
+* weak economics
+* incumbent advantages
+* evidence contradicting the thesis
+
+This agent is mandatory.
+
+---
+
+# 13. Source Hierarchy
+
+Sift should not treat every web page equally.
+
+## Tier 1 — Primary
+
+Highest preference:
+
+* Government
+* Regulatory agencies
+* Company filings
+* Official company documentation
+* Official pricing
+* Research papers
+* Standards organizations
+* Public datasets
+* Direct customer statements
+
+## Tier 2 — High-quality secondary
+
+* Major financial publications
+* Established industry publications
+* Research organizations
+* Credible analyst reports
+
+## Tier 3 — Community evidence
+
+* Reddit
+* Hacker News
+* Product reviews
+* Forums
+* GitHub discussions
+* App reviews
+
+## Tier 4 — Low-confidence
+
+* SEO blogs
+* Aggregators
+* Anonymous claims
+* Unsourced articles
+* AI-generated pages
+
+The system must preserve source provenance.
+
+---
+
+# 14. Evidence Object
+
+Every material evidence item should have a structured representation.
+
+```json
+{
+  "claim": "Independent restaurants report significant inventory waste",
+  "source": "example.com",
+  "source_type": "industry_report",
+  "published_at": "2026-05-10",
+  "retrieved_at": "2026-10-03",
+  "evidence_type": "supporting",
+  "relevance": "high",
+  "confidence": "medium",
+  "geography": "United States",
+  "population": "independent restaurants",
+  "notes": "Evidence does not establish willingness to pay."
+}
+```
+
+---
+
+# 15. Evidence Rules
+
+Sift must distinguish:
+
+### Evidence
+
+"Company X charges €299/month."
+
+### Analysis
+
+"Comparable products establish a market price range around €200–€400/month."
+
+### Assumption
+
+"Restaurants will pay €300/month."
+
+### Unknown
+
+"No reliable evidence currently establishes willingness to pay."
+
+These cannot be merged.
+
+---
+
+# 16. Contradiction Engine
+
+For every major conclusion:
+
+```text
+CONCLUSION
+     ↓
+SEARCH FOR SUPPORT
+     ↓
+SEARCH FOR CONTRADICTION
+     ↓
+COMPARE EVIDENCE
+     ↓
+CLASSIFY
+```
+
+Possible states:
+
+* Supported
+* Mixed
+* Weakly supported
+* Contradicted
+* Unknown
+
+No artificial numerical certainty should be added.
+
+---
+
+# 17. Competitor Intelligence
+
+Competitor discovery should produce more than a list.
+
+For each competitor:
+
+```text
+Company
+Product
+Target customer
+Geography
+Pricing
+Business model
+Distribution
+Funding if reliably available
+Traction evidence
+Strengths
+Weaknesses
+Customer complaints
+Positioning
+Differentiation
+Evidence
+Last verified
+```
+
+The system should identify:
+
+### Direct competitors
+
+Same problem + same customer + similar solution.
+
+### Indirect competitors
+
+Same problem + different solution.
+
+### Substitutes
+
+What customers currently use instead.
+
+### Non-consumption
+
+The possibility that customers simply tolerate the problem.
+
+This last category is critical.
+
+---
+
+# 18. Failed Competitor Analysis
+
+Sift should search specifically for:
+
+* shutdowns
+* acquisitions
+* pivots
+* discontinued products
+* abandoned projects
+* failed Kickstarter/project launches
+* negative customer feedback
+* declining businesses
+
+Purpose:
+
+> Understand why attempts to solve the problem may have failed.
+
+This is more informative than simply finding successful competitors.
+
+---
+
+# 19. Market Analysis
+
+Sift should produce:
+
+### TAM
+
+Top-down and/or bottom-up estimate.
+
+### SAM
+
+Reachable serviceable segment.
+
+### SOM
+
+Explicitly assumption-based realistic initial opportunity.
+
+Every market-size number requires:
+
+```text
+Value
+Methodology
+Inputs
+Source
+Date
+Geography
+Population
+Assumptions
+```
+
+The UI must never display a TAM number without showing how it was calculated.
+
+---
+
+# 20. Demand Signals
+
+Possible evidence:
+
+* Search interest
+* Search growth
+* Reddit discussions
+* Review volume
+* Product Hunt activity
+* GitHub activity
+* Job postings
+* Funding activity
+* Product launches
+* Existing customer spending
+* Communities
+* Google Trends where appropriate
+* Industry reports
+
+Demand signals are evidence, not proof of willingness to pay.
+
+---
+
+# 21. Economics Engine
+
+The system should create a simple economic model.
+
+Inputs:
+
+```text
+Price
+Customers
+Revenue
+COGS
+Gross margin
+CAC
+Retention
+Churn
+Sales cycle
+Implementation cost
+Support cost
+```
+
+Outputs:
+
+* Revenue scenarios
+* Gross margin scenarios
+* CAC payback scenarios
+* Break-even analysis
+* Sensitivity analysis
+
+Unknown values must be labeled as assumptions.
+
+Example:
+
+```text
+Price: €299/month
+Source: competitor pricing
+
+CAC: UNKNOWN
+Retention: UNKNOWN
+Gross margin: ASSUMPTION
+
+Conclusion:
+Economic viability cannot yet be established.
+```
+
+---
+
+# 22. Technical Feasibility
+
+The technical analysis should determine:
+
+* required infrastructure
+* required APIs
+* ML requirements
+* data requirements
+* hardware requirements
+* integration requirements
+* latency requirements
+* reliability requirements
+* security requirements
+* technical constraints
+* estimated engineering complexity
+
+Classification:
+
+```text
+Straightforward
+Feasible with engineering
+Technically difficult
+Research-heavy
+Potentially infeasible
+Unknown
+```
+
+This is a descriptive classification, not a numeric score.
+
+---
+
+# 23. Regulatory Analysis
+
+Research:
+
+* applicable jurisdiction
+* industry
+* licensing
+* privacy
+* data protection
+* AI regulation
+* financial regulation
+* healthcare regulation
+* employment regulation
+* consumer protection
+* product liability
+* safety requirements
+
+Each regulatory conclusion must include:
+
+```text
+Jurisdiction
+Applicable rule
+Source
+Effective date
+Impact
+Open question
+```
+
+Sift should explicitly state:
+
+> "This is research, not legal advice."
+
+---
+
+# 24. GTM Analysis
+
+The system identifies:
+
+### Customer acquisition channels
+
+* SEO
+* Paid acquisition
+* Communities
+* Partnerships
+* Sales
+* Outbound
+* Product-led growth
+* Marketplaces
+* Affiliates
+* Existing distribution
+
+### Distribution constraints
+
+* Gatekeepers
+* Procurement
+* Long sales cycles
+* Regulatory approvals
+* Network effects
+* Platform dependency
+* Trust requirements
+
+The output should identify the **first plausible distribution wedge**.
+
+---
+
+# 25. Defensibility Analysis
+
+Sift asks:
+
+> "If this works, what prevents someone else from copying it?"
+
+Evaluate:
+
+* proprietary data
+* workflow integration
+* switching costs
+* network effects
+* brand
+* distribution
+* technical advantage
+* operational advantage
+* regulatory advantage
+* scale economies
+* community
+* learning loops
+
+The system should distinguish between:
+
+**Feature differentiation**
+
+and
+
+**structural defensibility.**
+
+---
+
+# 26. Validation Experiment Engine
+
+This is the bridge from research to reality.
+
+For every critical unknown, Sift generates experiments.
+
+Example:
+
+### Unknown
+
+Will restaurants pay €300/month?
+
+### Experiment
+
+Interview 15 restaurant operators.
+
+Then offer:
+
+> "We can reduce your inventory waste by X%. Would you pay €300/month for a 30-day pilot?"
+
+### Success criterion
+
+At least 3 of 15 qualified prospects agree to a paid pilot.
+
+### Failure criterion
+
+No qualified prospect accepts a paid pilot after 15 conversations.
+
+### Evidence generated
+
+Real-world customer validation.
+
+---
+
+# 27. Experiment Ranking
+
+Experiments should be prioritized by:
+
+```text
+Impact of uncertainty
+×
+Decision relevance
+×
+Evidence gap
+÷
+Experiment cost
+```
+
+Do not expose this as a fake precision score.
+
+Instead classify:
+
+* Critical — test immediately
+* High — test before building
+* Medium — test during MVP
+* Low — defer
+
+---
+
+# 28. Final Thesis
+
+The final report should produce a concise thesis:
+
+## Opportunity
+
+One-paragraph description.
+
+## Customer
+
+Who has the problem?
+
+## Problem
+
+What is happening?
+
+## Existing behavior
+
+What do they do today?
+
+## Proposed solution
+
+What changes?
+
+## Evidence
+
+What is established?
+
+## Critical assumptions
+
+What must be true?
+
+## Contradictory evidence
+
+What challenges the thesis?
+
+## Unknowns
+
+What remains unresolved?
+
+## Competitive environment
+
+Who already addresses it?
+
+## Economics
+
+What would need to be true?
+
+## Feasibility
+
+Can it be built?
+
+## Validation plan
+
+What should happen next?
+
+---
+
+# 29. Decision Output
+
+Sift should NOT output:
+
+> "Your idea is 82/100."
+
+Instead:
+
+### Evidence State
+
+**Strong evidence**
+
+The problem exists.
+
+### Evidence State
+
+**Mixed evidence**
+
+Customers use multiple existing solutions.
+
+### Evidence State
+
+**Weak evidence**
+
+Willingness to pay remains unclear.
+
+### Critical unknown
+
+Whether customers will pay enough to support viable economics.
+
+### Recommended next step
+
+Run a paid pilot.
+
+This is the product's core philosophy.
+
+---
+
+# 30. Report UI
+
+The report should be interactive rather than a giant wall of text.
+
+## Top-level navigation
+
+```text
+Overview
+Assumptions
+Evidence
+Counter-Evidence
+Customers
+Problem
+Competition
+Market
+Economics
+Technology
+Regulation
+GTM
+Defensibility
+Experiments
+Sources
+Research Log
+```
+
+---
+
+# 31. Overview Dashboard
+
+The first screen should answer five questions immediately:
+
+### 1. What is the opportunity?
+
+### 2. What evidence supports it?
+
+### 3. What evidence challenges it?
+
+### 4. What are the biggest unknowns?
+
+### 5. What should I do next?
+
+Example:
+
+```text
+┌────────────────────────────────────────────┐
+│ RESTAURANT INVENTORY AI                    │
+│                                            │
+│ Evidence state: MIXED                      │
+│                                            │
+│ Problem evidence        STRONG             │
+│ Customer definition     MEDIUM             │
+│ Competition             HIGH               │
+│ Willingness to pay      UNKNOWN            │
+│ Technical feasibility   STRONG             │
+│                                            │
+│ BIGGEST UNKNOWN                              │
+│ Will restaurants pay €300/month?           │
+│                                            │
+│ NEXT EXPERIMENT                            │
+│ Run 15 customer interviews + 3 paid pilots│
+└────────────────────────────────────────────┘
+```
+
+---
+
+# 32. Evidence Explorer
+
+Users can click any conclusion.
+
+Example:
+
+```text
+WILLINGNESS TO PAY
+
+UNKNOWN
+
+Why?
+
+No direct evidence found demonstrating
+that the target customer segment will pay
+the proposed €300/month price.
+
+Supporting evidence:
+[Source A]
+Comparable product pricing: €199–€349
+
+Counter-evidence:
+[Source B]
+Customers report dissatisfaction with
+software costs.
+
+Recommended experiment:
+Paid pilot.
+```
+
+---
+
+# 33. Source Drawer
+
+Every claim must be traceable.
+
+Clicking a citation opens:
+
+```text
+SOURCE
+
+Title
+Publisher
+Publication date
+URL
+Source type
+Relevant excerpt
+Why Sift used it
+Claim supported
+Geography
+Population
+```
+
+The system should never fabricate citations.
+
+---
+
+# 34. Research Log
+
+Advanced users can inspect:
+
+```text
+Research started
+↓
+Search queries
+↓
+Sources discovered
+↓
+Sources rejected
+↓
+Claims extracted
+↓
+Contradictions found
+↓
+Assumptions updated
+↓
+Final conclusions
+```
+
+This becomes a major trust feature.
+
+---
+
+# 35. "Challenge the Idea" UI
+
+Primary CTA:
+
+**Challenge this idea**
+
+Then display:
+
+```text
+Sift will actively search for evidence
+that could invalidate this opportunity.
+
+It will investigate:
+
+✓ failed competitors
+✓ negative customer evidence
+✓ substitute solutions
+✓ pricing resistance
+✓ technical barriers
+✓ regulatory barriers
+✓ weak demand signals
+✓ incumbent advantages
+✓ distribution constraints
+✓ contradictory market data
+```
+
+User clicks:
+
+**Run Challenge**
+
+The system generates a separate challenge report.
+
+---
+
+# 36. Idea Versioning
+
+Every analysis becomes a version.
+
+```text
+Idea v1
+↓
+Research
+↓
+Customer interviews
+↓
+Idea v2
+↓
+New research
+↓
+Idea v3
+```
+
+Users can compare:
+
+```text
+What changed?
+Why did it change?
+Which evidence caused the change?
+Which assumptions were invalidated?
+```
+
+---
+
+# 37. Validation Workspace
+
+Users can create experiments.
+
+Each experiment:
+
+```text
+Experiment name
+Hypothesis
+Assumption tested
+Method
+Target participants
+Success criterion
+Failure criterion
+Deadline
+Result
+Evidence
+Conclusion
+```
+
+Example:
+
+```text
+EXP-003
+
+Hypothesis:
+Restaurants will pay €300/month.
+
+Method:
+15 interviews + 3 paid pilots.
+
+Success:
+≥3 paid pilots.
+
+Status:
+In progress
+```
+
+---
+
+# 38. Evidence Graph
+
+Visual graph:
+
+```text
+                 ┌──────────────┐
+                 │   CUSTOMER   │
+                 └──────┬───────┘
+                        │
+                        ↓
+                 ┌──────────────┐
+                 │    PROBLEM   │
+                 └──────┬───────┘
+                        │
+             ┌──────────┴──────────┐
+             ↓                     ↓
+       ASSUMPTION A           ASSUMPTION B
+             │                     │
+             ↓                     ↓
+        EVIDENCE                EVIDENCE
+             │                     │
+             ↓                     ↓
+      COUNTER-EVIDENCE      COUNTER-EVIDENCE
+             │                     │
+             └──────────┬──────────┘
+                        ↓
+                  CRITICAL UNKNOWN
+                        │
+                        ↓
+                   EXPERIMENT
+                        │
+                        ↓
+                     RESULT
+```
+
+---
+
+# 39. Search Architecture
+
+The research engine should use a multi-stage pipeline.
+
+```text
+QUERY GENERATION
+       ↓
+SOURCE DISCOVERY
+       ↓
+SOURCE FETCHING
+       ↓
+SOURCE VALIDATION
+       ↓
+CONTENT EXTRACTION
+       ↓
+CLAIM EXTRACTION
+       ↓
+CLAIM DEDUPLICATION
+       ↓
+EVIDENCE CLASSIFICATION
+       ↓
+CONTRADICTION DETECTION
+       ↓
+ASSUMPTION UPDATE
+       ↓
+SYNTHESIS
+```
+
+---
+
+# 40. Research Query Generation
+
+For each assumption, generate multiple query classes:
+
+### Direct
+
+"What do restaurants use for inventory management?"
+
+### Problem
+
+"restaurant inventory waste problems"
+
+### Negative
+
+"restaurant inventory software complaints"
+
+### Failure
+
+"restaurant inventory startup failed"
+
+### Pricing
+
+"restaurant inventory software pricing"
+
+### Alternative
+
+"restaurant inventory spreadsheet"
+
+### Customer
+
+"restaurant owner inventory management"
+
+### Reddit/community
+
+"site:reddit.com restaurant inventory management"
+
+This prevents one-query confirmation bias.
+
+---
+
+# 41. Source Verification
+
+Each source should receive checks for:
+
+* accessibility
+* publication date
+* author/publisher
+* relevance
+* geography
+* population
+* duplication
+* source quality
+* claim support
+
+A source saying something vaguely related must not be treated as evidence for a precise claim.
+
+---
+
+# 42. Freshness
+
+Every evidence item stores:
+
+```text
+Published
+Retrieved
+Last verified
+```
+
+Time-sensitive claims should be explicitly marked.
+
+Examples:
+
+* pricing
+* competitor status
+* regulations
+* funding
+* market conditions
+* product availability
+
+---
+
+# 43. Geography
+
+Research must respect geography.
+
+Example:
+
+```text
+Customer:
+German SMEs
+
+Evidence:
+US enterprise customers
+
+Classification:
+Related but not directly representative.
+```
+
+The system should never silently mix populations.
+
+---
+
+# 44. Population Awareness
+
+Every statistical claim should ideally identify:
+
+* population
+* sample
+* geography
+* period
+* methodology
+
+This prevents misleading statements such as:
+
+> "70% of customers want AI."
+
+without knowing:
+
+* who was surveyed
+* when
+* how
+* what "want" means
+
+---
+
+# 45. Reddit Integration
+
+Reddit can be an important qualitative signal, but Sift must not treat Reddit sentiment as market validation.
+
+Reddit can reveal:
+
+* pain
+* language
+* workarounds
+* objections
+* customer vocabulary
+* unmet needs
+* product complaints
+
+It does not by itself establish:
+
+* TAM
+* willingness to pay
+* representative prevalence
+* conversion probability
+
+## Important implementation constraint
+
+Reddit's current Data API terms restrict commercial use and state that commercial uses or uses outside permitted terms may require a separate agreement. They also prohibit using user content to train AI models without permission from the relevant rights holders.
+
+Therefore:
+
+### MVP
+
+Do not build Sift's business model around indiscriminate Reddit scraping.
+
+Support:
+
+* user-provided Reddit URLs
+* permitted API access
+* compliant search/indexing mechanisms
+* licensed data where necessary
+
+Do not build an architecture whose survival depends on circumventing Reddit restrictions.
+
+---
+
+# 46. Security & Privacy
+
+User ideas may be confidential.
+
+Requirements:
+
+* Encryption in transit
+* Encryption at rest
+* User-controlled deletion
+* Clear data retention policy
+* No public indexing of private reports
+* Workspace isolation
+* Secure API keys
+* Audit logging
+* Role-based access for teams
+
+The product should explicitly explain whether user data is used for model training.
+
+Default:
+
+**Do not use private customer ideas to train general models.**
+
+---
+
+# 47. Authentication
+
+MVP:
+
+* Email/password
+* Google OAuth
+* Email verification
+* Password reset
+* Session management
+
+Later:
+
+* SSO
+* SAML
+* SCIM
+* Enterprise identity providers
+
+---
+
+# 48. Free Tier
+
+Two genuinely useful analyses.
+
+Not two crippled demos.
+
+The objective is:
+
+> "Give the user enough product quality to understand why Sift is different."
+
+Suggested limits:
+
+```text
+FREE
+
+2 complete analyses / account lifetime
+
+Includes:
+✓ full report
+✓ evidence
+✓ competitor research
+✓ Challenge the Idea
+✓ source trail
+✓ experiments
+
+Limits:
+- analysis depth capped
+- limited export
+- limited historical versioning
+```
+
+Do not make the free experience merely:
+
+> "Here is your score. Pay to see the answer."
+
+That recreates the incumbent model.
+
+---
+
+# 49. Abuse Prevention
+
+Do not rely on IP blocking.
+
+Use:
+
+* email verification
+* account-level usage ledger
+* device/browser risk signals where legally appropriate
+* rate limiting
+* IP reputation
+* CAPTCHA triggered by suspicious activity
+* payment requirement after free allocation
+* anomaly detection
+
+The objective is economic friction, not perfect prevention.
+
+---
+
+# 50. Monetization
+
+## Stage 1
+
+One-time paid analyses.
+
+This matches the natural purchasing event:
+
+> "I need to decide whether to pursue this opportunity."
+
+## Stage 2
+
+Subscription.
+
+For users who continuously:
+
+* monitor markets
+* monitor competitors
+* run ideas
+* conduct experiments
+
+## Stage 3
+
+Teams.
+
+## Stage 4
+
+Enterprise.
+
+Potential enterprise customers:
+
+* accelerators
+* startup studios
+* venture funds
+* corporate innovation teams
+* consulting firms
+
+---
+
+# 51. Proposed Pricing Architecture
+
+Do not lock pricing in engineering.
+
+Configuration should support:
+
+```text
+Free
+Individual
+Pro
+Team
+Enterprise
+```
+
+Prices should be experimentally determined.
+
+The current category demonstrates that users can already buy one-time reports at roughly $29–$129 and subscriptions for ongoing intelligence, so Sift should test whether its decision/experiment workflow creates enough recurring value rather than assuming subscription economics.
+
+---
+
+# 52. MVP Scope
+
+## Must Have
+
+### Input
+
+* Text
+* Reddit URL
+* Web URL
+
+### Analysis
+
+* Idea normalization
+* Assumption extraction
+* Problem research
+* Customer research
+* Competitor research
+* Market research
+* Pricing research
+* Technical feasibility
+* Regulatory scan
+* Economics framework
+* Counter-evidence
+* Experiment generation
+
+### Output
+
+* Executive summary
+* Assumptions
+* Evidence
+* Counter-evidence
+* Competitors
+* Market
+* Economics
+* Risks
+* Experiments
+* Sources
+
+### Product
+
+* Accounts
+* Two free analyses
+* Analysis history
+* Interactive report
+* Source drawer
+* Challenge mode
+* Export
+
+---
+
+# 53. Explicit MVP Non-Goals
+
+Do NOT build initially:
+
+* Full CRM
+* Full project management
+* Investor CRM
+* Pitch-deck generator
+* Full financial planning suite
+* Automated customer interviews
+* Social media publishing
+* Full Reddit crawler
+* Mobile application
+* Browser extension
+* Enterprise SSO
+* Custom ML model training
+* Autonomous business formation
+* Autonomous company building
+
+These dilute the core product.
+
+---
+
+# 54. Technical Architecture
+
+Recommended architecture:
+
+```text
+                  ┌─────────────────┐
+                  │   WEB CLIENT    │
+                  │ React / Next.js │
+                  └────────┬────────┘
+                           │
+                           ↓
+                  ┌─────────────────┐
+                  │    API LAYER    │
+                  └────────┬────────┘
+                           │
+             ┌─────────────┼─────────────┐
+             ↓             ↓             ↓
+        AUTH SERVICE   PROJECTS      BILLING
+             │             │             │
+             └─────────────┼─────────────┘
+                           ↓
+                  ┌─────────────────┐
+                  │ ORCHESTRATOR    │
+                  └────────┬────────┘
+                           │
+          ┌────────────────┼─────────────────┐
+          ↓                ↓                 ↓
+     RESEARCH         ASSUMPTION        SYNTHESIS
+      AGENTS            ENGINE            ENGINE
+          │                │                 │
+          └────────────────┼─────────────────┘
+                           ↓
+                  ┌─────────────────┐
+                  │ EVIDENCE STORE  │
+                  └────────┬────────┘
+                           ↓
+                  ┌─────────────────┐
+                  │ REPORT ENGINE   │
+                  └────────┬────────┘
+                           ↓
+                  ┌─────────────────┐
+                  │ INTERACTIVE UI  │
+                  └─────────────────┘
+```
+
+---
+
+# 55. Recommended Technology Stack
+
+## Frontend
+
+* Next.js
+* React
+* TypeScript
+* Tailwind CSS
+* shadcn/ui
+* Recharts
+* React Flow for evidence graphs
+
+## Backend
+
+* TypeScript / Node.js
+* PostgreSQL
+* Redis
+* Background job queue
+* Object storage
+
+## Search
+
+Use a search provider abstraction.
+
+Do not hard-code Sift to one search vendor.
+
+```text
+SearchProvider
+ ├── Provider A
+ ├── Provider B
+ └── Provider C
+```
+
+## LLM
+
+Use an abstraction layer.
+
+```text
+LLMProvider
+ ├── Model A
+ ├── Model B
+ └── Model C
+```
+
+Research tasks should be routable to different models based on:
+
+* reasoning complexity
+* cost
+* latency
+* task type
+
+---
+
+# 56. Data Model
+
+Core entities:
+
+```text
+User
+Workspace
+Project
+Idea
+IdeaVersion
+Assumption
+Claim
+Evidence
+Source
+Competitor
+Market
+Experiment
+ExperimentResult
+ResearchRun
+AgentTask
+Report
+Subscription
+UsageLedger
+```
+
+Relationships:
+
+```text
+User
+ ↓
+Workspace
+ ↓
+Project
+ ↓
+Idea
+ ↓
+IdeaVersion
+ ↓
+Assumptions
+ ↓
+Claims
+ ↓
+Evidence
+ ↓
+Sources
+```
+
+Experiments connect back to assumptions.
+
+---
+
+# 57. Example Database Model
+
+### projects
+
+```text
+id
+workspace_id
+name
+description
+created_at
+updated_at
+```
+
+### ideas
+
+```text
+id
+project_id
+title
+raw_input
+normalized_problem
+normalized_customer
+normalized_solution
+created_at
+```
+
+### assumptions
+
+```text
+id
+idea_version_id
+category
+statement
+criticality
+status
+evidence_state
+created_at
+updated_at
+```
+
+### evidence
+
+```text
+id
+assumption_id
+claim
+source_id
+evidence_type
+confidence
+geography
+population
+published_at
+retrieved_at
+```
+
+### experiments
+
+```text
+id
+assumption_id
+hypothesis
+method
+success_criteria
+failure_criteria
+status
+result
+created_at
+updated_at
+```
+
+---
+
+# 58. Analysis State Machine
+
+Every research run:
+
+```text
+CREATED
+ ↓
+PARSING
+ ↓
+DECOMPOSING
+ ↓
+GENERATING_ASSUMPTIONS
+ ↓
+RESEARCHING
+ ↓
+VERIFYING
+ ↓
+CHALLENGING
+ ↓
+SYNTHESIZING
+ ↓
+QUALITY_CHECK
+ ↓
+COMPLETE
+```
+
+Failure states:
+
+```text
+FAILED
+PARTIAL
+NEEDS_RETRY
+```
+
+Never present a partial research result as a completed analysis.
+
+---
+
+# 59. Research Quality Control
+
+Before publishing a report, run an automated QA pass.
+
+Check:
+
+### Citation coverage
+
+Does each major factual claim have evidence?
+
+### Citation correctness
+
+Does the source actually support the claim?
+
+### Freshness
+
+Is the evidence sufficiently recent?
+
+### Contradiction coverage
+
+Was counter-evidence searched?
+
+### Geography
+
+Does the source population match the target market?
+
+### Numerical consistency
+
+Do TAM/SAM/SOM calculations reconcile?
+
+### Assumption transparency
+
+Are estimates explicitly labeled?
+
+### Hallucination detection
+
+Are claims unsupported by retrieved sources?
+
+---
+
+# 60. Report Quality Gate
+
+The system should not say:
+
+> "Research complete."
+
+unless:
+
+* required research modules finished
+* minimum source count reached
+* critical assumptions investigated
+* counter-evidence search completed
+* source validation completed
+* synthesis QA completed
+
+If evidence is insufficient:
+
+> **Research incomplete — insufficient evidence**
+
+That is preferable to fabricated confidence.
+
+---
+
+# 61. UX: Analysis Creation
+
+Homepage:
+
+```text
+┌────────────────────────────────────────────┐
+│ What are you thinking of building?         │
+│                                            │
+│ [ Describe your idea...                  ] │
+│                                            │
+│ Paste a Reddit or web URL                  │
+│                                            │
+│ [ Analyze my idea ]                        │
+│                                            │
+│ ───────────── OR ─────────────             │
+│                                            │
+│ 🎙 Describe it by voice                    │
+└────────────────────────────────────────────┘
+```
+
+Secondary prompt:
+
+> "Don't have an idea? Paste a customer complaint, Reddit thread, or problem you're seeing."
+
+---
+
+# 62. Research Progress UI
+
+Do not show a fake percentage.
+
+Instead:
+
+```text
+SIFT IS RESEARCHING
+
+✓ Understanding the problem
+✓ Identifying the customer
+✓ Mapping competitors
+✓ Investigating demand
+● Searching for contradictory evidence
+○ Modeling economics
+○ Checking regulatory constraints
+○ Designing validation experiments
+```
+
+Each stage can expose discovered findings in real time.
+
+---
+
+# 63. Report Navigation
+
+Persistent left navigation:
+
+```text
+OVERVIEW
+
+THESIS
+Assumptions
+Evidence
+Counter-evidence
+
+MARKET
+Customers
+Problem
+Competition
+Market
+Pricing
+
+FEASIBILITY
+Technology
+Economics
+Regulation
+GTM
+Defensibility
+
+ACTION
+Critical Unknowns
+Experiments
+Validation
+
+SOURCES
+Research Log
+Sources
+```
+
+---
+
+# 64. Key Metrics
+
+## Product metrics
+
+### Activation
+
+Percentage of new users who start an analysis.
+
+### Analysis completion
+
+Percentage of analyses successfully completed.
+
+### Report engagement
+
+Sections viewed per analysis.
+
+### Challenge usage
+
+Percentage of users who run Challenge the Idea.
+
+### Experiment creation
+
+Percentage of users who create at least one experiment.
+
+### Validation loop
+
+Percentage of projects that return with real-world validation data.
+
+This is especially important.
+
+Sift should optimize for:
+
+> **research → experiment → evidence update**
+
+rather than:
+
+> report generated.
+
+---
+
+# 65. North Star Metric
+
+Proposed:
+
+## Validated Decision Loops
+
+Number of projects where:
+
+1. Sift identifies a critical assumption.
+2. User runs a real-world experiment.
+3. Result is recorded.
+4. Thesis is updated.
+
+This measures whether Sift actually changes founder behavior.
+
+---
+
+# 66. Secondary Metrics
+
+* Free → paid conversion
+* Analysis completion rate
+* Challenge mode adoption
+* Experiment adoption
+* Return rate
+* Projects per user
+* Reports shared
+* Report export rate
+* Time to first analysis
+* Research cost per analysis
+* Gross margin per analysis
+
+---
+
+# 67. Unit Economics
+
+Every analysis has a measurable internal cost.
+
+Track:
+
+```text
+Search API cost
+LLM cost
+Page retrieval cost
+Embedding cost
+Storage
+Compute
+```
+
+Then:
+
+```text
+Analysis revenue
+-
+Analysis variable cost
+=
+Contribution margin
+```
+
+This must be instrumented from day one.
+
+A research-heavy AI product can look attractive while quietly losing money on every analysis.
+
+---
+
+# 68. Cost Controls
+
+Research agents should have:
+
+* token budgets
+* search budgets
+* source limits
+* retry limits
+* model routing
+* caching
+* deduplication
+* relevance filtering
+
+Do not send every source to the most expensive reasoning model.
+
+---
+
+# 69. Caching
+
+Cache:
+
+* source pages
+* source metadata
+* competitor information
+* company profiles
+* pricing information
+* reusable market evidence
+
+But enforce freshness requirements for volatile information.
+
+---
+
+# 70. Source-Level Deduplication
+
+If 15 websites repeat the same press release:
+
+```text
+15 pages ≠ 15 independent pieces of evidence
+```
+
+Sift should identify syndicated/repeated information.
+
+Evidence independence matters.
+
+---
+
+# 71. Research Confidence
+
+Avoid:
+
+> Confidence: 93%
+
+unless there is a defensible probabilistic methodology.
+
+Prefer:
+
+* High
+* Medium
+* Low
+* Unknown
+
+with explanation.
+
+Example:
+
+> **Medium confidence:** supported by three independent sources, but evidence is concentrated in the US and does not establish European demand.
+
+---
+
+# 72. Collaboration
+
+MVP:
+
+* share report
+* share project
+* comments
+
+Later:
+
+* workspace roles
+* reviewer
+* researcher
+* admin
+* analyst
+* approval workflows
+
+---
+
+# 73. Export
+
+MVP:
+
+* PDF
+* Markdown
+* shareable read-only URL
+
+Export should preserve citations.
+
+---
+
+# 74. API / MCP Direction
+
+Later, Sift should expose:
+
+```text
+POST /ideas/analyze
+GET /projects/{id}
+GET /assumptions/{id}
+GET /evidence/{id}
+POST /experiments
+POST /experiments/{id}/results
+POST /challenge
+```
+
+An MCP interface could allow:
+
+> "Run Sift on this startup idea."
+
+This is strategically interesting because competing products are already moving toward AI-agent integrations and MCP access. Preuve, for example, currently advertises MCP/API access for clients such as Claude, Cursor and Codex.
+
+Therefore Sift should eventually treat the **research engine as infrastructure**, not merely a website.
+
+---
+
+# 75. Enterprise Direction
+
+Enterprise workspace:
+
+```text
+Portfolio
+ ↓
+Opportunity Pipeline
+ ↓
+Research
+ ↓
+Assumptions
+ ↓
+Experiments
+ ↓
+Validated Opportunities
+```
+
+Potential use cases:
+
+### Accelerator
+
+Evaluate hundreds of applications.
+
+### Venture studio
+
+Evaluate dozens of venture concepts.
+
+### Corporate innovation
+
+Evaluate new business opportunities.
+
+### VC
+
+Research markets and investment theses.
+
+But these are **post-PMF expansion markets**, not MVP targets.
+
+---
+
+# 76. Competitive Positioning
+
+Sift should occupy:
+
+```text
+              RESEARCH DEPTH
+                    ↑
+                    │
+       DimeADozen   │
+                    │
+                    │       SIFT
+                    │
+                    │
+                    │
+                    └────────────────→
+                         DECISION /
+                         VALIDATION LOOP
+```
+
+But do not position Sift as:
+
+> "More research than DimeADozen."
+
+That is an expensive arms race.
+
+Position it as:
+
+> **Research that tells you what to test next.**
+
+The category already contains substantial report-generation and scoring products. DimeADozen emphasizes sourced decision documents; Preuve emphasizes live data, scores, competitors and pivots; Exploding Topics emphasizes emerging trends.
+
+Sift's product boundary should therefore be:
+
+**Evidence → Assumptions → Experiments → Updated thesis.**
+
+---
+
+# 77. Major Product Risks
+
+## Risk 1 — AI hallucination
+
+Mitigation:
+
+* citations
+* source verification
+* evidence objects
+* QA
+* claim-level provenance
+
+## Risk 2 — False confidence
+
+Mitigation:
+
+* no overall score
+* explicit unknowns
+* confidence labels
+* counter-evidence
+
+## Risk 3 — Commodity research
+
+Mitigation:
+
+* experiment engine
+* assumption graph
+* thesis versioning
+* validation loop
+
+## Risk 4 — High research cost
+
+Mitigation:
+
+* caching
+* model routing
+* research budgets
+* source deduplication
+
+## Risk 5 — Users want a simple answer
+
+Some users will still ask:
+
+> "Should I build it?"
+
+Sift should answer the underlying question without pretending to predict the future:
+
+> "Here are the three conditions that determine whether this is worth building, and only one has been validated."
+
+## Risk 6 — Reddit dependency
+
+Mitigation:
+
+* do not build around scraping
+* use compliant APIs/licensing
+* diversify sources
+
+Reddit's current developer terms make this particularly important for a monetized product.
+
+## Risk 7 — Research becomes a commodity
+
+Mitigation:
+
+Turn research into a **persistent decision system**.
+
+---
+
+# 78. Product Moat
+
+The moat should not be:
+
+> "We have a better prompt."
+
+It should become:
+
+### 1. Structured evidence graph
+
+Claims, sources, assumptions and experiments connected over time.
+
+### 2. Validation history
+
+Sift knows:
+
+```text
+What the founder believed
+→
+what evidence existed
+→
+what they tested
+→
+what happened
+→
+what changed
+```
+
+### 3. Research infrastructure
+
+Source normalization, competitor entities, market data and evidence provenance.
+
+### 4. Experiment intelligence
+
+Over time Sift learns which experiments efficiently resolve different classes of uncertainty.
+
+### 5. Decision workflow
+
+The product becomes the workspace where opportunity decisions happen.
+
+---
+
+# 79. Future Product
+
+The long-term product is not:
+
+> "AI writes your startup report."
+
+It is:
+
+> **An operating system for opportunity validation.**
+
+A founder could maintain:
+
+```text
+IDEA PORTFOLIO
+
+Idea A
+  7 assumptions
+  4 validated
+  2 unresolved
+  1 contradicted
+
+Idea B
+  5 assumptions
+  2 validated
+  3 unresolved
+
+Idea C
+  8 assumptions
+  6 contradicted
+```
+
+Sift continuously updates the evidence.
+
+---
+
+# 80. Phase Roadmap
+
+## Phase 0 — Prototype
+
+Build:
+
+* landing page
+* idea input
+* analysis generation
+* static/interactable report
+* sources
+* Challenge the Idea
+
+Goal:
+
+**Prove users care about the output.**
+
+---
+
+## Phase 1 — MVP
+
+Add:
+
+* accounts
+* two free analyses
+* projects
+* analysis history
+* evidence graph
+* assumptions
+* experiments
+* exports
+* billing
+
+Goal:
+
+**Users repeatedly use Sift to make startup decisions.**
+
+---
+
+## Phase 2 — Validation Loop
+
+Add:
+
+* experiment tracking
+* customer interviews
+* validation results
+* thesis versioning
+* research refresh
+* notifications
+
+Goal:
+
+**Move from research product to decision workflow.**
+
+---
+
+## Phase 3 — Intelligence Platform
+
+Add:
+
+* continuous monitoring
+* competitor alerts
+* market changes
+* source subscriptions
+* APIs
+* MCP
+* team workspaces
+
+Goal:
+
+**Recurring value.**
+
+---
+
+## Phase 4 — Enterprise
+
+Add:
+
+* SSO
+* RBAC
+* audit logs
+* portfolio management
+* organization-level research
+* custom source configurations
+* API contracts
+* enterprise security
+
+Goal:
+
+**Institutional opportunity intelligence.**
+
+---
+
+# 81. MVP Acceptance Criteria
+
+The MVP is not complete until a user can:
+
+### Input
+
+* Enter a startup idea.
+* Submit a URL.
+* Submit a Reddit URL.
+
+### Understand
+
+* See normalized problem/customer/solution.
+* Review generated assumptions.
+* Edit assumptions.
+
+### Research
+
+* See competitor analysis.
+* See market evidence.
+* See customer/problem evidence.
+* See technology analysis.
+* See economic assumptions.
+* See regulatory considerations.
+
+### Challenge
+
+* Run Challenge the Idea.
+* See contradictory evidence.
+
+### Trace
+
+* Click a claim.
+* See its evidence.
+* Open its source.
+
+### Act
+
+* See critical unknowns.
+* Create a validation experiment.
+* Define success/failure criteria.
+
+### Return
+
+* Reopen the project.
+* Update an experiment.
+* Create a new idea version.
+
+### Monetization
+
+* Receive two free analyses.
+* Be blocked from a third analysis until payment/upgrade.
+
+---
+
+# 82. Quality Bar
+
+A successful Sift report should make the user say:
+
+> "I learned something I didn't know."
+
+Not:
+
+> "That is a very nicely formatted business plan."
+
+The quality hierarchy is:
+
+```text
+Novel evidence
+    >
+Correct evidence
+    >
+Useful synthesis
+    >
+Actionable experiment
+    >
+Beautiful presentation
+```
+
+UI quality matters, but research quality is the product.
+
+---
+
+# 83. The First Killer Demo
+
+Do not demo Sift using a hypothetical perfect idea.
+
+Use an actual startup idea.
+
+Input:
+
+> "I want to build an AI recruiting agent that automatically applies to jobs for users."
+
+Then Sift should discover:
+
+```text
+PROBLEM
+Job seekers spend significant time applying.
+
+         ↓
+
+EXISTING SOLUTIONS
+Several AI job application products already exist.
+
+         ↓
+
+COMPETITION
+Crowded.
+
+         ↓
+
+CUSTOMER
+Demand exists, but differentiation is unclear.
+
+         ↓
+
+COUNTER-EVIDENCE
+Users complain about application quality,
+irrelevant applications, spam-like behavior,
+and loss of control.
+
+         ↓
+
+CRITICAL ASSUMPTION
+Users will trust an autonomous agent to apply
+on their behalf.
+
+         ↓
+
+UNKNOWN
+Willingness to delegate the full application
+process remains uncertain.
+
+         ↓
+
+EXPERIMENT
+Offer a semi-autonomous workflow to 20 users.
+
+         ↓
+
+MEASURE
+Application approval rate
+Interview rate
+User intervention rate
+Retention
+Willingness to pay
+```
+
+That demonstrates the actual thesis.
+
+Sift did not say:
+
+> "This startup is bad."
+
+It exposed **why the opportunity is difficult and what evidence would resolve the uncertainty.**
+
+That is much more defensible.
+
+---
+
+# 84. Product North Star
+
+The final product statement should be:
+
+> **Sift turns startup ideas into falsifiable business theses, connects every important assumption to evidence, actively searches for contradictory evidence, and tells founders what to test next.**
+
+Not:
+
+> AI startup idea validator.
+
+Not:
+
+> AI business-plan generator.
+
+Not:
+
+> AI market research tool.
+
+Not:
+
+> Startup scoring platform.
+
+---
+
+# 85. One-Sentence Pitch
+
+**Sift is an AI research and validation engine that turns an idea into an evidence-backed business thesis, actively tries to disprove it, and identifies the experiments that matter before you build.**
+
+---
+
+# 86. Build Priority
+
+If engineering resources are constrained, build in exactly this order:
+
+```text
+1. Idea input
+       ↓
+2. Idea decomposition
+       ↓
+3. Assumption generation
+       ↓
+4. Web research
+       ↓
+5. Evidence extraction
+       ↓
+6. Competitor discovery
+       ↓
+7. Challenge the Idea
+       ↓
+8. Critical unknowns
+       ↓
+9. Experiment generation
+       ↓
+10. Interactive report
+       ↓
+11. Accounts + usage limits
+       ↓
+12. Payments
+```
+
+Do **not** start with:
+
+* dashboards
+* team management
+* fancy graphs
+* investor decks
+* mobile
+* enterprise controls
+
+The core product must first prove:
+
+> **Can Sift uncover something important that the founder did not already know and turn it into a concrete next experiment?**
+
+That is the product that needs to work before everything else matters.

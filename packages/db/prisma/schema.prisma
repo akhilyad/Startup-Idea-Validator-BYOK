@@ -1,0 +1,529 @@
+// Sift — Prisma schema
+//
+// PORTABILITY NOTE (see docs/database.md):
+// The default local-first provider is SQLite so the app runs with zero
+// infrastructure. To target the spec's PostgreSQL, change `provider` below to
+// "postgresql" and point DATABASE_URL at a Postgres instance (docker-compose.yml).
+//
+// Because Prisma `enum` and `Json` are NOT supported on SQLite, enum-like
+// columns are stored as String (validated by @sift/validation) and JSON blobs
+// are stored as String (serialized via @sift/db helpers). These choices are
+// valid on PostgreSQL too, so the schema is portable in both directions.
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------------------------------------------------------------------
+// Identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String?
+  name            String?
+  image           String?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  memberships    WorkspaceMember[]
+  ownedWorkspaces Workspace[]      @relation("WorkspaceOwner")
+  usageEvents    UsageEvent[]
+  auditLogs      AuditLog[]
+
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  accessToken       String?
+  refreshToken      String?
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  createdAt         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Workspaces, membership, projects, ideas
+// ---------------------------------------------------------------------------
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner        User                @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  members      WorkspaceMember[]
+  projects     Project[]
+  analyses     Analysis[]
+  usageEvents  UsageEvent[]
+  subscription Subscription?
+  auditLogs    AuditLog[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        String // OWNER | ADMIN | MEMBER | VIEWER
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  workspaceId String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  ideas     Idea[]
+
+  @@index([workspaceId])
+}
+
+model Idea {
+  id               String   @id @default(uuid())
+  projectId        String
+  currentVersionId String?  @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  currentVersion IdeaVersion?  @relation("IdeaCurrentVersion", fields: [currentVersionId], references: [id])
+  versions       IdeaVersion[] @relation("IdeaVersions")
+
+  @@index([projectId])
+}
+
+model IdeaVersion {
+  id                 String   @id @default(uuid())
+  ideaId             String
+  versionNumber      Int
+  rawInput           String
+  inputType          String // TEXT | URL | REDDIT_URL | PASTE | VOICE
+  sourceUrl          String?
+  normalizedCustomer String?
+  normalizedProblem  String?
+  normalizedSolution String?
+  industry           String?
+  geography          String?
+  businessModel      String?
+  pricing            String?
+  distribution       String?
+  technology         String?
+  // JSON stored as String for SQLite portability. See packages/db/src/json.ts
+  assumptionsJson    String   @default("[]")
+  constraintsJson    String   @default("[]")
+  createdAt          DateTime @default(now())
+
+  idea       Idea         @relation("IdeaVersions", fields: [ideaId], references: [id], onDelete: Cascade)
+  currentFor Idea?        @relation("IdeaCurrentVersion")
+  analyses   Analysis[]
+
+  @@unique([ideaId, versionNumber])
+  @@index([ideaId])
+}
+
+// ---------------------------------------------------------------------------
+// Analysis & research output
+// ---------------------------------------------------------------------------
+
+model Analysis {
+  id             String    @id @default(uuid())
+  ideaVersionId  String
+  workspaceId    String
+  status         String // AnalysisStatus
+  requestedDepth String // QUICK | STANDARD | DEEP
+  cancelRequested Boolean  @default(false)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  failureReason  String?
+  qualityStatus  String    @default("NOT_RUN")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  ideaVersion    IdeaVersion    @relation(fields: [ideaVersionId], references: [id], onDelete: Cascade)
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assumptions    Assumption[]
+  claims         Claim[]
+  competitors    Competitor[]
+  experiments    Experiment[]
+  researchRuns   ResearchRun[]
+  reports        Report[]
+  logEntries     ResearchLogEntry[]
+  usageEvents    UsageEvent[]
+  exportJobs     ExportJob[]
+
+  @@index([workspaceId])
+  @@index([ideaVersionId])
+  @@index([status])
+}
+
+model Assumption {
+  id                String   @id @default(uuid())
+  analysisId        String
+  category          String
+  statement         String
+  criticality       String
+  confidence        String
+  status            String   @default("OPEN")
+  evidenceState     String   @default("UNKNOWN")
+  unknowns          String?
+  requiredExperiment String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  analysis   Analysis   @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  claims     Claim[]
+  experiments Experiment[]
+
+  @@index([analysisId])
+  @@index([category])
+}
+
+model Source {
+  id                 String    @id @default(uuid())
+  canonicalUrl       String
+  title              String?
+  publisher          String?
+  author             String?
+  publishedAt        DateTime?
+  retrievedAt        DateTime?
+  sourceType         String // PRIMARY | SECONDARY | COMMUNITY | LOW_CONFIDENCE
+  tier               String // TIER_1_PRIMARY .. TIER_4_LOW_CONFIDENCE
+  contentHash        String?
+  accessibilityStatus String   @default("ACCESSIBLE")
+  geography          String?
+  population         String?
+  // Dedup / independence (TPRD §42, §43)
+  independenceKey    String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  evidence Evidence[]
+
+  @@index([canonicalUrl])
+  @@index([contentHash])
+  @@index([independenceKey])
+}
+
+model Claim {
+  id           String   @id @default(uuid())
+  analysisId   String
+  assumptionId String?
+  section      String?
+  statement    String
+  claimType    String // FACT | DERIVED_ANALYSIS | ASSUMPTION | UNKNOWN | COUNTER_EVIDENCE | VALIDATION_RESULT
+  status       String?
+  confidence   String
+  createdAt    DateTime @default(now())
+
+  analysis   Analysis    @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  assumption Assumption? @relation(fields: [assumptionId], references: [id], onDelete: SetNull)
+  evidence   Evidence[]
+
+  @@index([analysisId])
+  @@index([assumptionId])
+}
+
+model Evidence {
+  id           String   @id @default(uuid())
+  claimId      String
+  sourceId     String
+  evidenceType String // SUPPORTING | COUNTER | NEUTRAL | CONTEXT
+  excerpt      String
+  relevance    String
+  confidence   String
+  geography    String?
+  population   String?
+  timePeriod   String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  claim  Claim  @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([sourceId])
+}
+
+model Competitor {
+  id               String    @id @default(uuid())
+  analysisId       String
+  classification   String // DIRECT | INDIRECT | SUBSTITUTE | NON_CONSUMPTION | FAILED
+  company          String
+  product          String?
+  targetCustomer   String?
+  geography        String?
+  pricing          String?
+  businessModel    String?
+  distribution     String?
+  funding          String?
+  tractionEvidence String?
+  strengths        String?
+  weaknesses       String?
+  complaints       String?
+  positioning      String?
+  differentiation  String?
+  evidenceJson     String    @default("[]")
+  lastVerified     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  analysis Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+}
+
+// ---------------------------------------------------------------------------
+// Validation workspace & research provenance
+// ---------------------------------------------------------------------------
+
+model Experiment {
+  id                 String    @id @default(uuid())
+  analysisId         String
+  assumptionId       String?
+  name               String
+  hypothesis         String
+  method             String
+  targetParticipants String?
+  successCriterion   String
+  failureCriterion   String
+  deadline           DateTime?
+  priority           String // CRITICAL | HIGH | MEDIUM | LOW
+  status             String    @default("PROPOSED")
+  result             String?
+  conclusion         String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  analysis   Analysis           @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  assumption Assumption?        @relation(fields: [assumptionId], references: [id], onDelete: SetNull)
+  results    ExperimentResult[]
+
+  @@index([analysisId])
+  @@index([assumptionId])
+}
+
+model ExperimentResult {
+  id           String   @id @default(uuid())
+  experimentId String
+  recordedAt   DateTime @default(now())
+  outcome      String // SUCCESS | FAILURE | INCONCLUSIVE | PARTIAL
+  notes        String?
+  evidenceJson String   @default("[]")
+  createdAt    DateTime @default(now())
+
+  experiment Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  @@index([experimentId])
+}
+
+model ResearchRun {
+  id            String    @id @default(uuid())
+  analysisId    String
+  runType       String // INITIAL | CHALLENGE | REFRESH
+  status        String // QUEUED | RUNNING | COMPLETE | PARTIAL | FAILED | CANCELLED
+  startedAt     DateTime?
+  completedAt   DateTime?
+  tokenCost     Float     @default(0)
+  searchCost    Float     @default(0)
+  sourceCount   Int       @default(0)
+  failureReason String?
+  createdAt     DateTime  @default(now())
+
+  analysis Analysis       @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  tasks    ResearchTask[]
+  logEntries ResearchLogEntry[]
+
+  @@index([analysisId])
+  @@index([status])
+}
+
+model ResearchTask {
+  id            String    @id @default(uuid())
+  researchRunId String
+  taskType      String
+  status        String // PENDING | RUNNING | COMPLETE | FAILED | SKIPPED
+  inputJson     String    @default("{}")
+  outputJson    String    @default("{}")
+  attempts      Int       @default(0)
+  startedAt     DateTime?
+  completedAt   DateTime?
+  failureReason String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  run ResearchRun @relation(fields: [researchRunId], references: [id], onDelete: Cascade)
+
+  @@unique([researchRunId, taskType])
+  @@index([researchRunId])
+  @@index([status])
+}
+
+model ResearchLogEntry {
+  id          String   @id @default(uuid())
+  analysisId  String
+  runId       String?
+  agent       String?
+  eventType   String
+  query       String?
+  sourceId    String?
+  decision    String?
+  reason      String?
+  payloadJson String   @default("{}")
+  createdAt   DateTime @default(now())
+
+  analysis Analysis     @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  run      ResearchRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@index([runId])
+}
+
+model Report {
+  id            String   @id @default(uuid())
+  analysisId    String
+  version       Int      @default(1)
+  thesisJson    String   @default("{}")
+  qualityStatus String   @default("NOT_RUN")
+  generatedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  analysis Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@unique([analysisId, version])
+  @@index([analysisId])
+}
+
+model ExportJob {
+  id         String    @id @default(uuid())
+  analysisId String
+  format     String // PDF | MARKDOWN
+  status     String    @default("QUEUED")
+  storageKey String?
+  content    String?
+  failureReason String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  analysis Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+}
+
+// ---------------------------------------------------------------------------
+// Usage ledger, billing, audit, idempotency
+// ---------------------------------------------------------------------------
+
+/** Authoritative usage accounting (TPRD §33, §57). */
+model UsageEvent {
+  id          String   @id @default(uuid())
+  workspaceId String
+  userId      String?
+  analysisId  String?
+  eventType   String
+  quantity    Float    @default(1)
+  unitCost    Float    @default(0)
+  metadataJson String  @default("{}")
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  analysis  Analysis? @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+model Subscription {
+  id                     String    @id @default(uuid())
+  workspaceId            String    @unique
+  provider               String    @default("placeholder")
+  providerCustomerId     String?
+  providerSubscriptionId String?
+  plan                   String    @default("FREE")
+  status                 String    @default("ACTIVE")
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  workspaceId String?
+  userId      String?
+  action      String
+  targetType  String?
+  targetId    String?
+  metadataJson String  @default("{}")
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([action])
+}
+
+/** Idempotency for retryable mutations (TPRD §18, §66). */
+model IdempotencyKey {
+  key          String   @id
+  scope        String
+  requestHash  String
+  responseJson String   @default("{}")
+  statusCode   Int      @default(200)
+  createdAt    DateTime @default(now())
+
+  @@index([scope])
+}

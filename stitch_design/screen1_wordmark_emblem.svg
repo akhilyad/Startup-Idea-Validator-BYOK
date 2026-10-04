@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 48" fill="none">
+  <g transform="translate(4, 6)">
+    <!-- Elegant minimalist Sift geometric emblem inspired by Claude/Anthropic warm mark -->
+    <path d="M12 2C10 8 7 14 2 18C7 22 10 28 12 34C14 28 17 22 22 18C17 14 14 8 12 2Z" fill="#CC5A36" />
+    <circle cx="28" cy="18" r="3.5" fill="#CC5A36" opacity="0.8" />
+  </g>
+  <text x="46" y="32" font-family="'Newsreader', 'Georgia', serif" font-size="28" font-weight="600" fill="#1F1E1D" letter-spacing="-0.02em">Sift</text>
+</svg>

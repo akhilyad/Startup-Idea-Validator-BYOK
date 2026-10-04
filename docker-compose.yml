@@ -1,0 +1,47 @@
+# Optional production-shaped infrastructure.
+# Sift runs WITHOUT this file (local-first defaults: SQLite + in-memory queue).
+# Use it when you want the spec's PostgreSQL + Redis/BullMQ topology.
+#
+#   docker compose up -d
+#   # then set in .env:
+#   #   DB_PROVIDER=postgresql
+#   #   DATABASE_URL=postgresql://sift:sift@localhost:5432/sift
+#   #   QUEUE_DRIVER=redis
+#   #   REDIS_URL=redis://localhost:6379
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sift-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sift
+      POSTGRES_PASSWORD: sift
+      POSTGRES_DB: sift
+    ports:
+      - "5432:5432"
+    volumes:
+      - sift-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sift"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: sift-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - sift-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sift-pgdata:
+  sift-redisdata:

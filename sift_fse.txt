@@ -1,0 +1,3095 @@
+# SIFT
+
+## Full-Stack Software Development & Engineering Technical Product Requirements Document
+
+**Document:** 02 — Engineering TPRD
+**Product:** Sift
+**Status:** Build Specification
+**Audience:** Full-stack engineers, AI coding agents, technical architects, QA, DevOps
+**Depends on:** Document 01 — Sift Product PRD
+
+---
+
+# 1. Purpose
+
+This document specifies the technical implementation of Sift.
+
+The existing Product PRD defines:
+
+> **What Sift is, why it exists, what users should experience, and what the product must do.**
+
+This document defines:
+
+> **How Sift must be engineered to deliver that product.**
+
+This document covers:
+
+* frontend architecture
+* backend architecture
+* database architecture
+* API contracts
+* AI/LLM architecture
+* research orchestration
+* evidence and provenance infrastructure
+* background jobs
+* authentication
+* authorization
+* billing
+* usage limits
+* infrastructure
+* deployment
+* observability
+* security
+* testing
+* reliability
+* performance
+* failure handling
+* environment configuration
+* CI/CD
+* implementation sequencing
+* acceptance criteria
+* requirement traceability
+* AI coding-agent implementation rules
+
+This document does **not** redefine Sift's product strategy.
+
+---
+
+# 2. Authority and Requirement Hierarchy
+
+Sift consists of three technical/product documents.
+
+```text
+DOCUMENT 01
+PRODUCT PRD
+"What + Why"
+       │
+       ▼
+DOCUMENT 02
+ENGINEERING TPRD
+"How"
+       │
+       ▼
+IMPLEMENTATION
+       │
+       ▼
+TESTS + ACCEPTANCE
+```
+
+The Product PRD remains the source of truth for product behavior.
+
+The Engineering TPRD is the source of truth for implementation architecture.
+
+If the two documents conflict:
+
+1. Identify the conflict.
+2. Do not silently choose one.
+3. Preserve the documented product behavior.
+4. Determine whether the engineering implementation can satisfy it.
+5. If not, flag the conflict for explicit resolution.
+
+An implementation detail must never silently become a new product requirement.
+
+---
+
+# 3. Engineering Principles
+
+The Sift codebase MUST follow these principles.
+
+## 3.1 Evidence over assertion
+
+The system must distinguish:
+
+* observed fact
+* sourced evidence
+* derived analysis
+* assumption
+* unknown
+* counter-evidence
+* validation result
+
+The application must never represent an unsupported inference as an observed fact.
+
+## 3.2 Provenance by default
+
+Material research claims must be traceable to their source.
+
+## 3.3 Structured AI
+
+LLMs must produce schema-validated structured outputs.
+
+Free-form model output must never directly mutate trusted application state.
+
+## 3.4 Asynchronous by design
+
+Research is a long-running workflow.
+
+The web request must not remain open while the entire research pipeline executes.
+
+## 3.5 Failure is a first-class state
+
+Every external dependency can fail.
+
+The system must explicitly handle:
+
+* timeout
+* rate limit
+* malformed response
+* unavailable source
+* model failure
+* search failure
+* worker failure
+* database failure
+* payment failure
+* authentication failure
+
+## 3.6 No fake completion
+
+A partially completed research run must never be represented as complete.
+
+## 3.7 Idempotency
+
+Retrying a job must not accidentally create duplicate analyses, duplicate billing events, duplicate evidence records, or duplicate experiments.
+
+## 3.8 Provider abstraction
+
+Search and LLM providers must be replaceable without rewriting the application domain.
+
+---
+
+# 4. Recommended Technology Stack
+
+The MVP should use a TypeScript-first monorepo.
+
+| Layer               | Technology                                       |
+| ------------------- | ------------------------------------------------ |
+| Web                 | Next.js + React + TypeScript                     |
+| Styling             | Tailwind CSS                                     |
+| UI primitives       | shadcn/ui                                        |
+| Charts              | Recharts                                         |
+| Graph visualization | React Flow                                       |
+| API                 | Node.js + TypeScript                             |
+| API framework       | Fastify                                          |
+| Validation          | Zod                                              |
+| ORM                 | Prisma                                           |
+| Database            | PostgreSQL                                       |
+| Queue               | BullMQ                                           |
+| Queue backend       | Redis                                            |
+| Object storage      | S3-compatible storage                            |
+| Authentication      | Auth.js                                          |
+| OAuth               | Google OAuth                                     |
+| Payments            | Stripe                                           |
+| Testing             | Vitest + Playwright                              |
+| Observability       | OpenTelemetry + Sentry-compatible error tracking |
+| CI                  | GitHub Actions                                   |
+| Deployment          | Containerized services                           |
+
+These are implementation defaults.
+
+The architecture must keep provider-specific code behind interfaces.
+
+---
+
+# 5. System Architecture
+
+## 5.1 High-level architecture
+
+```text
+                         ┌─────────────────────┐
+                         │      Browser        │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   Next.js Web App   │
+                         │ UI + Server Routes  │
+                         └──────────┬──────────┘
+                                    │
+                              HTTPS / API
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │    API Service      │
+                         │                     │
+                         │ Auth                │
+                         │ Projects            │
+                         │ Analyses            │
+                         │ Evidence            │
+                         │ Experiments         │
+                         │ Billing             │
+                         └───────┬─────┬───────┘
+                                 │     │
+                       ┌─────────┘     └──────────┐
+                       ▼                          ▼
+              ┌────────────────┐          ┌────────────────┐
+              │  PostgreSQL    │                    │     Redis      │
+              │                │                    │                │
+              │ Product data   │                    │ Job queues     │
+              │ Evidence      │                     │ Locks          │
+              │ Users         │                     │ Cache          │
+              └────────────────┘          └───────┬────────┘
+                                                  │
+                                                  ▼
+                                         ┌─────────────────┐
+                                         │ Worker Service  │
+                                         │                 │
+                                         │ Research        │
+                                         │ Retrieval       │
+                                         │ Evidence        │
+                                         │ Contradiction   │
+                                         │ Synthesis       │
+                                         │ QA              │
+                                         └───────┬─────────┘
+                                                 │
+                         ┌───────────────────────┼─────────────────────┐
+                         ▼                       ▼                     ▼
+                  Search Providers        LLM Providers          Source Fetchers
+                         │                       │                     │
+                         └───────────────────────┼─────────────────────┘
+                                                 ▼
+                                          External Internet
+```
+
+---
+
+# 6. Repository Architecture
+
+Use a monorepo.
+
+```text
+sift/
+│
+├── apps/
+│   ├── web/
+│   ├── api/
+│   └── worker/
+│
+├── packages/
+│   ├── ui/
+│   ├── types/
+│   ├── config/
+│   ├── db/
+│   ├── ai/
+│   ├── research/
+│   ├── validation/
+│   └── observability/
+│
+├── tests/
+│   ├── integration/
+│   ├── e2e/
+│   ├── ai-evals/
+│   └── fixtures/
+│
+├── prisma/
+│   ├── schema.prisma
+│   └── migrations/
+│
+├── docs/
+│
+├── scripts/
+│
+├── .github/
+│   └── workflows/
+│
+├── package.json
+├── turbo.json
+└── README.md
+```
+
+Recommended workspace tooling:
+
+* pnpm
+* Turborepo
+
+---
+
+# 7. Application Boundaries
+
+## 7.1 Web application
+
+Responsible for:
+
+* UI
+* navigation
+* forms
+* client-side validation
+* report visualization
+* research progress
+* evidence explorer
+* experiment workspace
+* account management
+
+The frontend must not contain business-critical secrets.
+
+## 7.2 API service
+
+Responsible for:
+
+* authentication verification
+* authorization
+* request validation
+* business logic
+* database operations
+* queue creation
+* usage enforcement
+* billing state
+* report retrieval
+
+## 7.3 Worker service
+
+Responsible for:
+
+* research orchestration
+* external search
+* source retrieval
+* source processing
+* claim extraction
+* evidence classification
+* contradiction research
+* synthesis
+* quality assurance
+
+Long-running AI/research operations must execute here.
+
+---
+
+# 8. Frontend Architecture
+
+## 8.1 Route structure
+
+```text
+/
+├── login
+├── signup
+├── verify-email
+├── forgot-password
+│
+├── dashboard
+│
+├── analyses
+│   ├── new
+│   └── [analysisId]
+│
+├── projects
+│   └── [projectId]
+│
+├── experiments
+│   └── [experimentId]
+│
+├── settings
+│   ├── account
+│   ├── workspace
+│   └── security
+│
+└── billing
+```
+
+---
+
+# 9. Analysis UI Architecture
+
+The primary analysis page:
+
+```text
+/analyses/[analysisId]
+```
+
+contains:
+
+```text
+Analysis Header
+│
+├── Status
+├── Idea Version
+├── Last Updated
+└── Actions
+    ├── Challenge the Idea
+    ├── New Version
+    └── Export
+```
+
+Main navigation:
+
+```text
+Overview
+Assumptions
+Evidence
+Counter-Evidence
+Customers
+Problem
+Competition
+Market
+Economics
+Technology
+Regulation
+GTM
+Defensibility
+Experiments
+Sources
+Research Log
+```
+
+Each section must consume typed API responses.
+
+The frontend must not parse arbitrary AI text to determine UI state.
+
+---
+
+# 10. Frontend State Management
+
+Use three distinct state categories.
+
+## Server state
+
+Examples:
+
+* analysis
+* assumptions
+* evidence
+* competitors
+* experiments
+
+Managed through a query/cache layer.
+
+## Local UI state
+
+Examples:
+
+* open drawer
+* selected evidence
+* active tab
+* filter
+* sort order
+
+Use React state/context where appropriate.
+
+## Form state
+
+Use typed schema-backed forms.
+
+Zod schemas should be shared between frontend and backend where practical.
+
+---
+
+# 11. Frontend Research Progress
+
+Do not display fake percentage completion.
+
+Instead display actual pipeline stages.
+
+```text
+✓ Idea interpreted
+✓ Assumptions identified
+✓ Customer research
+● Competitor research
+○ Market research
+○ Counter-evidence
+○ Synthesis
+○ Quality check
+```
+
+The backend is authoritative for status.
+
+The frontend receives progress through Server-Sent Events or equivalent realtime transport.
+
+---
+
+# 12. Frontend Required States
+
+Every significant screen must define:
+
+* loading
+* empty
+* populated
+* error
+* retry
+* unauthorized
+* forbidden
+* unavailable
+* partial
+* stale
+
+Research-specific states additionally require:
+
+* queued
+* running
+* paused
+* retrying
+* partially complete
+* failed
+* completed
+
+---
+
+# 13. Accessibility
+
+The application must meet WCAG 2.2 AA-oriented implementation practices.
+
+Required:
+
+* keyboard navigation
+* semantic HTML
+* visible focus states
+* accessible form labels
+* accessible dialogs
+* screen-reader-compatible status changes
+* sufficient contrast
+* no color-only meaning
+* reduced-motion support where relevant
+
+---
+
+# 14. Backend Architecture
+
+Backend modules:
+
+```text
+auth
+users
+workspaces
+projects
+ideas
+analyses
+assumptions
+claims
+evidence
+sources
+competitors
+market
+economics
+experiments
+research
+reports
+billing
+usage
+exports
+audit
+health
+```
+
+Each module should have clear boundaries.
+
+Example:
+
+```text
+analyses/
+├── controller
+├── service
+├── repository
+├── schemas
+├── policies
+└── tests
+```
+
+---
+
+# 15. API Design
+
+Base path:
+
+```text
+/api/v1
+```
+
+All endpoints must use:
+
+* typed request validation
+* typed responses
+* authentication middleware
+* authorization checks
+* structured error responses
+* request IDs
+* rate limiting where appropriate
+
+---
+
+# 16. Core API Endpoints
+
+## Analysis
+
+```http
+POST /api/v1/analyses
+GET  /api/v1/analyses
+GET  /api/v1/analyses/:id
+POST /api/v1/analyses/:id/cancel
+POST /api/v1/analyses/:id/challenge
+POST /api/v1/analyses/:id/new-version
+```
+
+## Assumptions
+
+```http
+GET /api/v1/analyses/:id/assumptions
+GET /api/v1/assumptions/:id
+PATCH /api/v1/assumptions/:id
+```
+
+## Evidence
+
+```http
+GET /api/v1/analyses/:id/evidence
+GET /api/v1/evidence/:id
+```
+
+## Sources
+
+```http
+GET /api/v1/analyses/:id/sources
+GET /api/v1/sources/:id
+```
+
+## Experiments
+
+```http
+GET  /api/v1/analyses/:id/experiments
+POST /api/v1/analyses/:id/experiments
+GET  /api/v1/experiments/:id
+PATCH /api/v1/experiments/:id
+POST /api/v1/experiments/:id/results
+```
+
+## Reports
+
+```http
+GET /api/v1/analyses/:id/report
+GET /api/v1/analyses/:id/export
+```
+
+## Research progress
+
+```http
+GET /api/v1/analyses/:id/events
+```
+
+---
+
+# 17. API Error Contract
+
+All API errors must follow a consistent structure.
+
+```json
+{
+  "error": {
+    "code": "ANALYSIS_NOT_FOUND",
+    "message": "Analysis could not be found.",
+    "requestId": "req_123"
+  }
+}
+```
+
+Never return raw stack traces to users.
+
+Internal logs may contain detailed diagnostic information.
+
+---
+
+# 18. Idempotency
+
+Mutating operations that can be retried must support idempotency.
+
+Especially:
+
+* create analysis
+* start research
+* Challenge the Idea
+* create experiment
+* submit experiment result
+* Stripe webhook processing
+
+Use idempotency keys where appropriate.
+
+---
+
+# 19. Database Architecture
+
+Use PostgreSQL.
+
+Primary identifier strategy:
+
+```text
+UUID / UUID-compatible identifiers
+```
+
+All major records require:
+
+```text
+id
+created_at
+updated_at
+```
+
+User-owned data must include workspace/project ownership relationships.
+
+---
+
+# 20. Core Data Model
+
+## User
+
+```text
+User
+- id
+- email
+- password_hash / auth_provider_reference
+- email_verified_at
+- name
+- created_at
+- updated_at
+```
+
+## Workspace
+
+```text
+Workspace
+- id
+- name
+- owner_id
+- created_at
+- updated_at
+```
+
+## WorkspaceMember
+
+```text
+WorkspaceMember
+- id
+- workspace_id
+- user_id
+- role
+- created_at
+```
+
+Roles:
+
+```text
+OWNER
+ADMIN
+MEMBER
+VIEWER
+```
+
+---
+
+# 21. Project
+
+```text
+Project
+- id
+- workspace_id
+- name
+- description
+- created_at
+- updated_at
+```
+
+---
+
+# 22. Idea
+
+```text
+Idea
+- id
+- project_id
+- current_version_id
+- created_at
+- updated_at
+```
+
+---
+
+# 23. IdeaVersion
+
+```text
+IdeaVersion
+- id
+- idea_id
+- version_number
+- raw_input
+- normalized_customer
+- normalized_problem
+- normalized_solution
+- industry
+- geography
+- business_model
+- pricing
+- distribution
+- technology
+- assumptions_json
+- constraints_json
+- created_at
+```
+
+Every meaningful modification creates a new version.
+
+Previous versions must remain immutable.
+
+---
+
+# 24. Analysis
+
+```text
+Analysis
+- id
+- idea_version_id
+- status
+- requested_depth
+- started_at
+- completed_at
+- failure_reason
+- quality_status
+- created_at
+- updated_at
+```
+
+Statuses:
+
+```text
+CREATED
+PARSING
+DECOMPOSING
+GENERATING_ASSUMPTIONS
+RESEARCHING
+VERIFYING
+CHALLENGING
+SYNTHESIZING
+QUALITY_CHECK
+COMPLETE
+PARTIAL
+FAILED
+NEEDS_RETRY
+CANCELLED
+```
+
+---
+
+# 25. Assumption
+
+```text
+Assumption
+- id
+- analysis_id
+- category
+- statement
+- criticality
+- confidence
+- status
+- unknowns
+- required_experiment
+- created_at
+- updated_at
+```
+
+Categories:
+
+```text
+DESIRABILITY
+CUSTOMER
+PROBLEM
+SOLUTION
+DEMAND
+PRICING
+BUSINESS_MODEL
+MARKET
+COMPETITION
+DISTRIBUTION
+TECHNOLOGY
+OPERATIONS
+REGULATION
+ECONOMICS
+DEFENSIBILITY
+TIMING
+```
+
+---
+
+# 26. Claim
+
+```text
+Claim
+- id
+- analysis_id
+- statement
+- claim_type
+- status
+- confidence
+- created_at
+```
+
+Claim types:
+
+```text
+FACT
+DERIVED_ANALYSIS
+ASSUMPTION
+UNKNOWN
+COUNTER_EVIDENCE
+VALIDATION_RESULT
+```
+
+---
+
+# 27. Source
+
+```text
+Source
+- id
+- canonical_url
+- title
+- publisher
+- author
+- published_at
+- retrieved_at
+- source_type
+- content_hash
+- accessibility_status
+- geography
+- population
+- created_at
+- updated_at
+```
+
+Source types:
+
+```text
+PRIMARY
+SECONDARY
+COMMUNITY
+LOW_CONFIDENCE
+```
+
+---
+
+# 28. Evidence
+
+```text
+Evidence
+- id
+- claim_id
+- source_id
+- evidence_type
+- excerpt
+- relevance
+- confidence
+- geography
+- population
+- notes
+- created_at
+```
+
+Evidence types:
+
+```text
+SUPPORTING
+COUNTER
+NEUTRAL
+CONTEXT
+```
+
+Evidence must never exist without provenance.
+
+---
+
+# 29. Competitor
+
+```text
+Competitor
+- id
+- analysis_id
+- company
+- product
+- target_customer
+- geography
+- pricing
+- business_model
+- distribution
+- funding
+- traction_evidence
+- strengths
+- weaknesses
+- complaints
+- positioning
+- differentiation
+- last_verified
+- created_at
+- updated_at
+```
+
+Classification:
+
+```text
+DIRECT
+INDIRECT
+SUBSTITUTE
+NON_CONSUMPTION
+FAILED
+```
+
+---
+
+# 30. Experiment
+
+```text
+Experiment
+- id
+- analysis_id
+- assumption_id
+- name
+- hypothesis
+- method
+- target_participants
+- success_criterion
+- failure_criterion
+- deadline
+- priority
+- status
+- result
+- conclusion
+- created_at
+- updated_at
+```
+
+Priority:
+
+```text
+CRITICAL
+HIGH
+MEDIUM
+LOW
+```
+
+---
+
+# 31. ResearchRun
+
+```text
+ResearchRun
+- id
+- analysis_id
+- run_type
+- status
+- started_at
+- completed_at
+- token_cost
+- search_cost
+- source_count
+- failure_reason
+- created_at
+```
+
+---
+
+# 32. ResearchTask
+
+```text
+ResearchTask
+- id
+- research_run_id
+- task_type
+- status
+- input_json
+- output_json
+- attempts
+- started_at
+- completed_at
+- failure_reason
+```
+
+Task types:
+
+```text
+NORMALIZE
+GENERATE_ASSUMPTIONS
+PROBLEM_RESEARCH
+CUSTOMER_RESEARCH
+COMPETITOR_RESEARCH
+MARKET_RESEARCH
+PRICING_RESEARCH
+TECHNOLOGY_RESEARCH
+REGULATION_RESEARCH
+ECONOMICS_RESEARCH
+GTM_RESEARCH
+DEFENSIBILITY_RESEARCH
+COUNTER_EVIDENCE
+SYNTHESIS
+QUALITY_CHECK
+```
+
+---
+
+# 33. Usage Ledger
+
+```text
+UsageEvent
+- id
+- workspace_id
+- user_id
+- analysis_id
+- event_type
+- quantity
+- metadata_json
+- created_at
+```
+
+This ledger is authoritative for usage accounting.
+
+Do not infer lifetime usage solely from UI state.
+
+---
+
+# 34. Subscription
+
+```text
+Subscription
+- id
+- workspace_id
+- provider
+- provider_customer_id
+- provider_subscription_id
+- plan
+- status
+- current_period_start
+- current_period_end
+- created_at
+- updated_at
+```
+
+Billing entitlement logic must remain separate from Stripe-specific implementation.
+
+---
+
+# 35. Research Architecture
+
+Sift's research engine must be implemented as an orchestrated pipeline.
+
+```text
+Raw Idea
+   ↓
+Normalization
+   ↓
+Assumption Extraction
+   ↓
+Research Planning
+   ↓
+Query Generation
+   ↓
+Source Discovery
+   ↓
+Source Retrieval
+   ↓
+Source Validation
+   ↓
+Claim Extraction
+   ↓
+Evidence Classification
+   ↓
+Deduplication
+   ↓
+Contradiction Search
+   ↓
+Assumption Update
+   ↓
+Synthesis
+   ↓
+Quality Assurance
+   ↓
+Report
+```
+
+---
+
+# 36. Agent Architecture
+
+Agents are software modules, not independent autonomous systems with unrestricted access.
+
+Each agent receives a bounded task.
+
+Required agents:
+
+```text
+ProblemResearcher
+CustomerResearcher
+CompetitorResearcher
+MarketResearcher
+PricingResearcher
+TechnologyResearcher
+RegulationResearcher
+EconomicsResearcher
+GTMResearcher
+DefensibilityResearcher
+CounterEvidenceResearcher
+SynthesisAgent
+QualityAgent
+```
+
+---
+
+# 37. Agent Contract
+
+Every agent must have:
+
+```text
+Agent name
+Purpose
+Input schema
+Output schema
+Allowed tools
+Search constraints
+Source requirements
+Token budget
+Timeout
+Retry policy
+Failure behavior
+Validation rules
+```
+
+Example:
+
+```text
+CounterEvidenceResearcher
+
+Purpose:
+Find credible evidence that could invalidate the current thesis.
+
+Input:
+- thesis
+- assumptions
+- existing evidence
+- geography
+- customer definition
+
+Output:
+- contradictory claims
+- evidence
+- source references
+- affected assumptions
+- severity
+- unresolved questions
+```
+
+---
+
+# 38. AI Output Validation
+
+Every model response must pass:
+
+```text
+LLM output
+   ↓
+JSON parsing
+   ↓
+Zod schema validation
+   ↓
+Domain validation
+   ↓
+Evidence validation
+   ↓
+Persistence
+```
+
+Invalid output:
+
+```text
+retry
+  ↓
+alternative model / repaired structured output
+  ↓
+validation
+```
+
+After retry limits are exceeded:
+
+```text
+TASK_FAILED
+```
+
+Never persist malformed AI output as authoritative data.
+
+---
+
+# 39. LLM Provider Abstraction
+
+Create an internal interface:
+
+```text
+LLMProvider
+├── generateStructured()
+├── generateText()
+├── estimateCost()
+└── getModelMetadata()
+```
+
+The application must not directly couple domain logic to a specific vendor SDK.
+
+Provider configuration belongs in infrastructure/configuration.
+
+---
+
+# 40. Search Provider Abstraction
+
+Create:
+
+```text
+SearchProvider
+├── search()
+├── retrieve()
+├── getMetadata()
+└── healthCheck()
+```
+
+Provider-specific adapters must implement this interface.
+
+This allows Sift to change search infrastructure without rewriting research agents.
+
+---
+
+# 41. Source Retrieval
+
+The retrieval subsystem must:
+
+1. Resolve URL.
+2. Fetch content.
+3. Record retrieval timestamp.
+4. Record HTTP status.
+5. Extract usable content.
+6. Detect publisher/title/date where possible.
+7. Calculate content hash.
+8. Store normalized metadata.
+9. Preserve canonical URL.
+10. Record accessibility failures.
+
+If a source cannot be accessed:
+
+```text
+ACCESS_UNAVAILABLE
+```
+
+Do not infer its content.
+
+---
+
+# 42. Source Deduplication
+
+The system must detect:
+
+* identical URLs
+* canonical URL equivalents
+* identical content hashes
+* syndicated copies
+* duplicated claims from the same underlying source
+
+Ten articles repeating one press release must not be represented as ten independent pieces of evidence.
+
+---
+
+# 43. Evidence Independence
+
+Evidence records must include an independence relationship where relevant.
+
+Example:
+
+```text
+Source A → original government dataset
+
+Source B → article quoting Source A
+
+Source C → blog quoting Source B
+```
+
+These should not be counted as three independent sources.
+
+---
+
+# 44. Query Generation
+
+Research agents may generate multiple query classes.
+
+Required classes:
+
+```text
+DIRECT
+PROBLEM
+NEGATIVE
+FAILURE
+PRICING
+ALTERNATIVE
+CUSTOMER
+COMMUNITY
+```
+
+Counter-evidence research must explicitly include negative/failure queries.
+
+---
+
+# 45. Challenge the Idea
+
+Challenge mode must create a new research run linked to the existing analysis.
+
+```text
+Existing Thesis
+      ↓
+Challenge Run
+      ↓
+Disconfirming Queries
+      ↓
+Negative Evidence
+      ↓
+Contradiction Analysis
+      ↓
+Assumption Updates
+      ↓
+Updated Thesis
+```
+
+It must not simply rerun the original research.
+
+---
+
+# 46. Geography and Population Integrity
+
+Every material evidence record should preserve:
+
+* geography
+* population/customer segment
+* time period
+
+The synthesis engine must not silently combine:
+
+```text
+US enterprise data
++
+German SMB data
++
+global consumer data
+```
+
+and represent them as one population.
+
+If evidence is not directly comparable:
+
+```text
+NON-COMPARABLE
+```
+
+must be represented explicitly.
+
+---
+
+# 47. Freshness
+
+Store:
+
+```text
+published_at
+retrieved_at
+last_verified_at
+```
+
+Time-sensitive evidence must be evaluated for freshness.
+
+The system must not imply that old evidence is current merely because it was retrieved recently.
+
+---
+
+# 48. Market Calculation Engine
+
+Market numbers must have structured inputs.
+
+```text
+MarketEstimate
+- value
+- currency
+- methodology
+- geography
+- population
+- period
+- source_ids
+- assumptions
+- calculation
+```
+
+A market estimate cannot exist without methodology.
+
+The UI must allow the user to inspect the calculation.
+
+---
+
+# 49. Economics Engine
+
+Economic calculations should use explicit variables.
+
+```text
+Price
+Customers
+Revenue
+COGS
+Gross Margin
+CAC
+Retention
+Churn
+Sales Cycle
+Implementation Cost
+Support Cost
+```
+
+Unknown values must remain assumptions.
+
+The system must not manufacture precision from insufficient inputs.
+
+---
+
+# 50. Regulatory Engine
+
+Regulatory records must include:
+
+```text
+Jurisdiction
+Industry
+Rule
+Source
+Effective Date
+Impact
+Open Question
+```
+
+Regulatory output must clearly remain informational and must not be represented as legal advice.
+
+---
+
+# 51. Report Generation
+
+Reports are generated from structured database state.
+
+```text
+Database facts
+     ↓
+Report assembly
+     ↓
+Citation validation
+     ↓
+Consistency checks
+     ↓
+Report artifact
+```
+
+The report generator must not independently invent facts that do not exist in the evidence layer.
+
+---
+
+# 52. Report Quality Gate
+
+An analysis may become `COMPLETE` only if:
+
+* required research modules finished
+* minimum source requirements satisfied
+* critical assumptions investigated
+* counter-evidence search completed
+* source metadata validated
+* citation coverage passes
+* numerical consistency passes
+* geography/population checks pass
+* synthesis schema passes
+* no unresolved critical pipeline failures remain
+
+Otherwise:
+
+```text
+PARTIAL
+```
+
+or:
+
+```text
+RESEARCH INCOMPLETE — INSUFFICIENT EVIDENCE
+```
+
+---
+
+# 53. Citation Coverage
+
+Every material externally verifiable claim in the final report should have:
+
+```text
+Claim → Evidence → Source
+```
+
+The QA system must detect unsupported claims.
+
+---
+
+# 54. Authentication
+
+MVP authentication:
+
+* email/password
+* email verification
+* Google OAuth
+* password reset
+* session management
+* logout
+* account deletion
+
+Future:
+
+* SSO
+* SAML
+* SCIM
+* enterprise identity providers
+
+---
+
+# 55. Authorization
+
+Every workspace-owned request must verify:
+
+```text
+Authenticated user
+        ↓
+Workspace membership
+        ↓
+Required role
+        ↓
+Resource ownership
+        ↓
+Operation
+```
+
+Never trust workspace/project IDs supplied by the client without authorization checks.
+
+---
+
+# 56. Multi-Tenancy
+
+All user data must be logically isolated by workspace.
+
+Queries must always enforce workspace boundaries.
+
+A user must never be able to retrieve another workspace's:
+
+* ideas
+* analyses
+* evidence
+* reports
+* experiments
+* billing information
+* API configuration
+* private sources
+
+Tests must explicitly verify cross-workspace isolation.
+
+---
+
+# 57. Free Usage
+
+MVP entitlement:
+
+```text
+2 full analyses per account lifetime
+```
+
+The free analyses should provide the core product experience rather than an artificially crippled report.
+
+Usage must be enforced server-side.
+
+Example:
+
+```text
+Analysis requested
+      ↓
+Usage entitlement check
+      ↓
+Allowed?
+ ┌────┴────┐
+YES        NO
+ ↓          ↓
+Create      Payment /
+analysis    upgrade flow
+```
+
+---
+
+# 58. Usage Abuse Prevention
+
+Use layered controls:
+
+* email verification
+* account-based usage ledger
+* rate limiting
+* request throttling
+* suspicious activity detection
+* CAPTCHA when necessary
+* payment verification for paid usage
+
+Do not depend exclusively on IP address.
+
+---
+
+# 59. Billing
+
+Stripe integration must be isolated behind a billing service.
+
+```text
+BillingService
+├── getEntitlements()
+├── createCheckout()
+├── createPortalSession()
+├── processWebhook()
+└── reconcileSubscription()
+```
+
+Stripe webhooks must be:
+
+* signature verified
+* idempotent
+* persisted
+* replay-safe
+
+The UI must never determine payment entitlement.
+
+---
+
+# 60. Security
+
+Required:
+
+* HTTPS
+* secure cookies
+* CSRF protection where applicable
+* input validation
+* output encoding
+* SQL injection protection
+* XSS protection
+* rate limiting
+* secret management
+* encryption at rest where supported
+* encryption in transit
+* secure password hashing
+* audit logging
+* least privilege
+* dependency scanning
+
+Never expose:
+
+* LLM API keys
+* search API keys
+* Stripe secrets
+* database credentials
+* internal service credentials
+
+to the browser.
+
+---
+
+# 61. User Idea Privacy
+
+Private startup ideas are sensitive business information.
+
+Default behavior:
+
+* private projects are not publicly indexed
+* users can delete their data
+* workspace boundaries are enforced
+* private customer data is not used to train general-purpose models by default
+* research data is isolated by workspace
+* API credentials are encrypted/securely stored
+
+---
+
+# 62. Audit Logging
+
+Record security-sensitive events:
+
+```text
+LOGIN
+LOGOUT
+PASSWORD_CHANGE
+EMAIL_CHANGE
+WORKSPACE_CREATED
+MEMBER_ADDED
+MEMBER_REMOVED
+ANALYSIS_CREATED
+ANALYSIS_DELETED
+EXPORT_CREATED
+BILLING_CHANGE
+API_KEY_CHANGE
+```
+
+Audit logs must not contain secrets.
+
+---
+
+# 63. Secrets and Configuration
+
+Configuration must be environment-based.
+
+Example:
+
+```text
+DATABASE_URL
+REDIS_URL
+AUTH_SECRET
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+LLM_PROVIDER_KEY
+SEARCH_PROVIDER_KEY
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+STORAGE_ACCESS_KEY
+STORAGE_SECRET_KEY
+SENTRY_DSN
+```
+
+Secrets must never be committed to Git.
+
+Provide:
+
+```text
+.env.example
+```
+
+with placeholders only.
+
+---
+
+# 64. Background Jobs
+
+Use BullMQ + Redis.
+
+Queues:
+
+```text
+analysis
+research
+retrieval
+evidence
+challenge
+synthesis
+qa
+exports
+billing
+notifications
+```
+
+Each job requires:
+
+* unique job ID
+* correlation ID
+* retry policy
+* timeout
+* maximum attempts
+* structured logs
+* failure state
+
+---
+
+# 65. Job Retry Policy
+
+Transient failures should retry.
+
+Permanent failures should not retry indefinitely.
+
+Example:
+
+```text
+Network timeout
+→ retry
+
+429 rate limit
+→ exponential backoff
+
+Invalid API credentials
+→ fail
+
+Malformed AI response
+→ bounded retry
+
+Source permanently unavailable
+→ mark unavailable
+```
+
+---
+
+# 66. Idempotent Worker Design
+
+Workers must be safe to execute more than once.
+
+Before creating a persistent record, determine whether an equivalent operation already exists.
+
+Example:
+
+```text
+ResearchTask ID
++
+Task version
++
+Analysis ID
+```
+
+can be used to identify duplicate execution.
+
+---
+
+# 67. Concurrency Control
+
+Prevent:
+
+* two analyses running against the same resource unexpectedly
+* duplicate Challenge runs
+* duplicate billing operations
+* duplicate experiment results
+
+Use database constraints and distributed locks where required.
+
+---
+
+# 68. Caching
+
+Cache expensive, reusable information where freshness permits.
+
+Potential cache targets:
+
+* source metadata
+* retrieved pages
+* normalized URLs
+* competitor metadata
+* pricing information
+* market evidence
+* model responses where deterministic and safe
+
+Every cache must have an explicit invalidation/freshness strategy.
+
+---
+
+# 69. Cost Controls
+
+Track variable infrastructure cost.
+
+At minimum:
+
+```text
+Search requests
+LLM tokens
+LLM calls
+Retrieval requests
+Embeddings
+Storage
+Worker compute
+```
+
+Each research run should have a cost record.
+
+The system should support:
+
+* token budgets
+* search budgets
+* source limits
+* retry limits
+* model routing
+* caching
+* deduplication
+
+---
+
+# 70. Observability
+
+Every request and background task must have a correlation/request ID.
+
+Structured logging should capture:
+
+```text
+timestamp
+service
+environment
+request_id
+user_id
+workspace_id
+analysis_id
+task_id
+event
+duration
+status
+error_code
+```
+
+Never log secrets.
+
+---
+
+# 71. Metrics
+
+Track at minimum:
+
+### Product/system
+
+* analysis creation rate
+* analysis completion rate
+* analysis failure rate
+* analysis duration
+* Challenge usage
+* experiment creation
+* experiment completion
+
+### Infrastructure
+
+* API latency
+* worker latency
+* queue depth
+* job retry rate
+* search failure rate
+* LLM failure rate
+* database latency
+* cache hit rate
+
+### Cost
+
+* cost per analysis
+* LLM cost
+* search cost
+* retrieval cost
+* total variable cost
+* contribution margin estimate
+
+---
+
+# 72. Research Metrics
+
+Track:
+
+```text
+sources discovered
+sources accepted
+sources rejected
+duplicate sources
+claims extracted
+claims unsupported
+supporting evidence
+counter-evidence
+contradictions
+assumptions updated
+unknowns generated
+```
+
+This gives Sift an internal research-quality telemetry layer.
+
+---
+
+# 73. Testing Strategy
+
+Testing must occur at five levels.
+
+```text
+Unit
+ ↓
+Integration
+ ↓
+AI Evaluation
+ ↓
+End-to-End
+ ↓
+Production Monitoring
+```
+
+---
+
+# 74. Unit Tests
+
+Test:
+
+* validation schemas
+* business rules
+* entitlement logic
+* calculations
+* state transitions
+* evidence classification
+* URL normalization
+* deduplication
+* permission checks
+
+---
+
+# 75. Integration Tests
+
+Test:
+
+* API + database
+* API + queue
+* workers + database
+* billing webhooks
+* authentication
+* source retrieval
+* research persistence
+* report generation
+
+Use isolated test databases.
+
+---
+
+# 76. End-to-End Tests
+
+Playwright flows:
+
+### Account
+
+```text
+Signup
+→ verify
+→ login
+→ dashboard
+```
+
+### Analysis
+
+```text
+New Analysis
+→ enter idea
+→ normalize
+→ start research
+→ observe progress
+→ open report
+```
+
+### Challenge
+
+```text
+Open analysis
+→ Challenge the Idea
+→ research
+→ counter-evidence
+→ updated report
+```
+
+### Experiment
+
+```text
+Open assumption
+→ create experiment
+→ record result
+→ update thesis
+```
+
+### Billing
+
+```text
+Exhaust free usage
+→ payment flow
+→ successful entitlement
+→ new analysis
+```
+
+---
+
+# 77. AI Evaluation Framework
+
+Traditional unit tests are insufficient for Sift's research quality.
+
+Create a deterministic evaluation dataset containing startup ideas and expected properties.
+
+Evaluate:
+
+* assumption extraction
+* evidence classification
+* citation correctness
+* contradiction discovery
+* source quality
+* geography awareness
+* population awareness
+* unsupported claim rate
+* hallucination rate
+* report completeness
+
+The goal is not to test whether the model produces identical prose.
+
+The goal is to test whether the system preserves required **facts, structure, provenance and reasoning constraints**.
+
+---
+
+# 78. Golden Test Cases
+
+Maintain representative cases for:
+
+1. B2B SaaS
+2. consumer app
+3. marketplace
+4. hardware
+5. regulated product
+6. healthcare
+7. fintech
+8. climate/energy
+9. AI infrastructure
+10. deliberately weak startup idea
+11. idea with strong contradictory evidence
+12. idea with insufficient evidence
+
+This prevents optimization toward only favorable startup ideas.
+
+---
+
+# 79. Hallucination Tests
+
+The system must fail QA if it:
+
+* invents a source
+* invents a citation
+* invents a company
+* invents pricing
+* invents a market statistic
+* attributes a statement to a source that does not support it
+* treats an assumption as fact
+
+---
+
+# 80. Performance Requirements
+
+Target MVP behavior:
+
+* normal UI navigation: responsive interaction
+* API reads: typically sub-second under normal load
+* API mutations: return quickly and enqueue long-running work
+* research jobs: asynchronous
+* report rendering: incremental where practical
+
+Do not optimize prematurely.
+
+Measure before introducing architectural complexity.
+
+---
+
+# 81. Reliability Requirements
+
+The system should tolerate:
+
+* temporary search outage
+* temporary LLM outage
+* worker restart
+* API restart
+* browser refresh during analysis
+* duplicate request
+* network interruption
+* Stripe webhook retry
+* source disappearance
+
+Research state must be recoverable from durable storage.
+
+---
+
+# 82. Cancellation
+
+Users should be able to cancel an active analysis.
+
+Cancellation must:
+
+1. mark the analysis as cancellation-requested
+2. stop new tasks from being scheduled
+3. allow safe in-flight tasks to terminate
+4. preserve already gathered evidence
+5. mark the analysis appropriately
+
+Cancellation must not corrupt existing research records.
+
+---
+
+# 83. Export System
+
+Supported MVP formats:
+
+```text
+PDF
+Markdown
+```
+
+Exports must contain:
+
+* report content
+* source references
+* evidence provenance
+* generated timestamp
+* analysis/version identifier
+
+Exports should execute asynchronously for large reports.
+
+---
+
+# 84. Research Log
+
+The system should preserve a machine-readable research log.
+
+Record:
+
+```text
+query
+timestamp
+agent
+source discovered
+source accepted/rejected
+reason
+claim extracted
+contradiction found
+assumption updated
+task status
+```
+
+This is not chain-of-thought storage.
+
+It is an operational provenance/audit record.
+
+---
+
+# 85. No Chain-of-Thought Persistence
+
+Do not store private model chain-of-thought.
+
+Store only concise, user-relevant and operationally necessary information such as:
+
+* evidence rationale
+* classification rationale
+* source relevance
+* validation result
+* decision trace
+* structured outputs
+
+---
+
+# 86. Feature Flags
+
+Potential flags:
+
+```text
+CHALLENGE_MODE
+EXPERIMENT_WORKSPACE
+PDF_EXPORT
+GOOGLE_AUTH
+BILLING
+COLLABORATION
+ADVANCED_RESEARCH
+```
+
+Feature flags must be server-authoritative for access-controlled functionality.
+
+---
+
+# 87. Local Development
+
+One command should ideally bootstrap the development environment.
+
+Required services:
+
+```text
+Web
+API
+Worker
+PostgreSQL
+Redis
+```
+
+Provide:
+
+```text
+docker-compose.yml
+.env.example
+seed script
+migration script
+README
+```
+
+Seed data should include a synthetic example analysis.
+
+No production API credentials should be required to run basic UI development.
+
+---
+
+# 88. Development Environments
+
+Minimum:
+
+```text
+local
+test
+staging
+production
+```
+
+Configuration must be environment-specific.
+
+Production data must never be used casually in local development.
+
+---
+
+# 89. CI/CD
+
+Every pull request must run:
+
+```text
+Typecheck
+Lint
+Unit tests
+Integration tests
+Build
+Database schema validation
+Security/dependency checks
+```
+
+Main branch additionally runs:
+
+```text
+E2E tests
+AI evaluation suite
+Container build
+```
+
+Deployment should be blocked if required checks fail.
+
+---
+
+# 90. Database Migration Rules
+
+All schema changes must use versioned migrations.
+
+Never manually alter production schema without a migration.
+
+Migrations must be:
+
+* reviewable
+* repeatable
+* tested
+* backward-compatible where required
+
+Destructive migrations require explicit handling of existing data.
+
+---
+
+# 91. API Versioning
+
+Use:
+
+```text
+/api/v1
+```
+
+Breaking API changes require a new version.
+
+Internal APIs may evolve independently when not externally exposed.
+
+---
+
+# 92. Documentation Requirements
+
+The repository must contain:
+
+```text
+README.md
+ARCHITECTURE.md
+API.md
+DATABASE.md
+RESEARCH_ENGINE.md
+AI_AGENTS.md
+DEPLOYMENT.md
+SECURITY.md
+TESTING.md
+ENVIRONMENT.md
+```
+
+Documentation must reflect the actual implementation.
+
+---
+
+# 93. Traceability Matrix
+
+Every Product PRD requirement must map to an engineering implementation.
+
+Example:
+
+| Product requirement | Engineering implementation                         |
+| ------------------- | -------------------------------------------------- |
+| Idea input          | New Analysis UI + API                              |
+| Idea normalization  | Normalization worker + editable UI                 |
+| Assumption engine   | Assumption service + AI worker                     |
+| Evidence explorer   | Evidence API + React UI                            |
+| Challenge the Idea  | Challenge worker pipeline                          |
+| Competitor research | Competitor agent + data model                      |
+| Market analysis     | Market agent + calculation engine                  |
+| Experiments         | Experiment service + UI                            |
+| Research log        | ResearchTask + audit records                       |
+| Analysis history    | Project/Analysis models                            |
+| 2 free analyses     | Usage ledger + entitlement service                 |
+| Billing             | Billing service + Stripe                           |
+| Export              | Export worker                                      |
+| Versioning          | IdeaVersion model                                  |
+| Evidence graph      | Claim/Evidence/Assumption/Experiment relationships |
+
+The complete implementation must extend this matrix to every requirement in Document 01.
+
+---
+
+# 94. Implementation Completeness Protocol
+
+This section is mandatory.
+
+The AI coding agent must treat the repository as an implementation project, not as an opportunity to redesign Sift.
+
+## Rule 1 — No silent invention
+
+Do not invent:
+
+* product functionality
+* workflows
+* business rules
+* pricing
+* permissions
+* AI objectives
+* research methodology
+* evidence standards
+
+If genuinely unspecified, flag it.
+
+## Rule 2 — No silent omission
+
+Do not skip a requirement because it is difficult.
+
+Record:
+
+```text
+Requirement
+Status
+Reason
+Affected components
+Required decision
+```
+
+## Rule 3 — No fake implementation
+
+A UI mockup is not implementation.
+
+A button that does nothing is not implementation.
+
+Hard-coded research results are not implementation.
+
+A simulated payment is not billing.
+
+Placeholder citations are not evidence.
+
+## Rule 4 — No unverified completion
+
+A feature is complete only when:
+
+```text
+Frontend
++
+Backend
++
+Database
++
+AI/Worker where applicable
++
+Validation
++
+Error handling
++
+Tests
++
+Acceptance criteria
+```
+
+are satisfied.
+
+## Rule 5 — Preserve provenance
+
+Never detach an evidence claim from its source.
+
+## Rule 6 — Preserve uncertainty
+
+Do not transform:
+
+```text
+Unknown
+```
+
+into:
+
+```text
+Probably true
+```
+
+without evidence.
+
+## Rule 7 — Preserve partial state
+
+Never convert:
+
+```text
+PARTIAL
+```
+
+into:
+
+```text
+COMPLETE
+```
+
+just to make the interface look finished.
+
+## Rule 8 — External dependencies are real dependencies
+
+If a provider is unavailable, implement the correct failure state.
+
+Do not substitute fake production data.
+
+## Rule 9 — Ask/flag rather than invent
+
+When a decision cannot be resolved from the Product PRD, Engineering TPRD, established architecture, or existing implementation conventions:
+
+```text
+FLAG DECISION
+```
+
+rather than silently choosing product behavior.
+
+---
+
+# 95. Requirement Traceability Requirement
+
+Before implementation is declared complete, generate:
+
+```text
+TRACEABILITY.md
+```
+
+containing:
+
+```text
+PRD Requirement
+→ Engineering Requirement
+→ Source Code
+→ Database/API impact
+→ Test
+→ Status
+```
+
+No requirement may remain silently unaccounted for.
+
+Valid statuses:
+
+```text
+IMPLEMENTED
+PARTIALLY_IMPLEMENTED
+BLOCKED
+NOT_STARTED
+NEEDS_DECISION
+```
+
+---
+
+# 96. Conflict Protocol
+
+If a requirement conflict is discovered:
+
+```text
+CONFLICT ID
+Requirement A
+Requirement B
+Why they conflict
+Affected systems
+Technical consequences
+Possible resolutions
+Required product decision
+```
+
+The coding agent must stop only the affected implementation path, not unnecessarily halt unrelated work.
+
+---
+
+# 97. Definition of Done
+
+Sift MVP is technically complete only when:
+
+### Product
+
+* all MVP Product PRD requirements mapped
+* no undocumented product behavior introduced
+
+### Frontend
+
+* production UI implemented
+* responsive behavior
+* accessibility
+* loading/error/empty/partial states
+* research progress
+* report navigation
+
+### Backend
+
+* API implemented
+* validation
+* authorization
+* business rules
+* idempotency
+* error handling
+
+### Database
+
+* schema
+* migrations
+* indexes
+* constraints
+* isolation
+
+### AI
+
+* structured outputs
+* provider abstraction
+* research agents
+* evidence pipeline
+* contradiction pipeline
+* synthesis
+* QA
+
+### Infrastructure
+
+* queue
+* worker
+* Redis
+* PostgreSQL
+* object storage
+* deployment configuration
+
+### Security
+
+* authentication
+* authorization
+* secrets
+* workspace isolation
+* audit logging
+* secure data handling
+
+### Billing
+
+* entitlement system
+* usage ledger
+* Stripe integration
+* webhook processing
+
+### Testing
+
+* unit
+* integration
+* E2E
+* AI evaluation
+* security tests
+
+### Operations
+
+* logging
+* monitoring
+* error tracking
+* metrics
+* cost tracking
+
+### Documentation
+
+* architecture
+* API
+* database
+* deployment
+* testing
+* research engine
+
+---
+
+# 98. Implementation Sequence
+
+The recommended implementation order is:
+
+## Phase 0 — Foundation
+
+```text
+Monorepo
+TypeScript
+CI/CD
+Docker
+Environment configuration
+PostgreSQL
+Redis
+Prisma
+Observability
+```
+
+## Phase 1 — Identity and Workspace
+
+```text
+Authentication
+Users
+Workspaces
+Authorization
+Settings
+```
+
+## Phase 2 — Core Product Data
+
+```text
+Projects
+Ideas
+Idea versions
+Analyses
+Assumptions
+Claims
+Evidence
+Sources
+```
+
+## Phase 3 — Analysis Input
+
+```text
+New Analysis UI
+Idea normalization
+Editable interpretation
+Analysis creation API
+```
+
+## Phase 4 — Research Engine
+
+```text
+Queue
+Workers
+Search abstraction
+Source retrieval
+Source validation
+Evidence extraction
+```
+
+## Phase 5 — Research Agents
+
+```text
+Problem
+Customer
+Competition
+Market
+Pricing
+Technology
+Regulation
+Economics
+GTM
+Defensibility
+```
+
+## Phase 6 — Challenge Engine
+
+```text
+Counter-evidence
+Contradiction detection
+Assumption updates
+Challenge UI
+```
+
+## Phase 7 — Synthesis
+
+```text
+Synthesis
+QA
+Report generation
+Citation validation
+```
+
+## Phase 8 — Validation Workspace
+
+```text
+Critical unknowns
+Experiments
+Results
+Thesis updates
+Version comparison
+```
+
+## Phase 9 — Productization
+
+```text
+Usage ledger
+Free entitlement
+Billing
+Exports
+History
+```
+
+## Phase 10 — Hardening
+
+```text
+Security
+Performance
+Failure recovery
+AI evaluation
+E2E testing
+Cost optimization
+Observability
+```
+
+---
+
+# 99. MVP Technical Acceptance Test
+
+A complete end-to-end MVP test should be possible:
+
+```text
+Create account
+      ↓
+Create project
+      ↓
+Enter startup idea
+      ↓
+Review normalized idea
+      ↓
+Confirm
+      ↓
+Research starts
+      ↓
+Worker pipeline executes
+      ↓
+Sources discovered
+      ↓
+Evidence extracted
+      ↓
+Assumptions updated
+      ↓
+Counter-evidence searched
+      ↓
+Synthesis generated
+      ↓
+QA passes
+      ↓
+Report becomes COMPLETE
+      ↓
+User opens evidence
+      ↓
+User opens source
+      ↓
+User sees counter-evidence
+      ↓
+User identifies critical unknown
+      ↓
+User creates experiment
+      ↓
+User records result
+      ↓
+Sift updates thesis/version
+```
+
+Every transition must be backed by actual persisted application state.
+
+---
+
+# 100. Final Engineering Principle
+
+The objective of this TPRD is not merely to tell an engineer what technologies to use.
+
+It establishes a boundary:
+
+```text
+                 SIFT PRODUCT PRD
+                       │
+                 WHAT SIFT DOES
+                       │
+                       ▼
+          ┌─────────────────────────┐
+          │ ENGINEERING TPRD        │
+          │                         │
+          │ Architecture            │
+          │ Frontend                │
+          │ Backend                 │
+          │ Database                │
+          │ APIs                    │
+          │ AI                     │
+          │ Research                │
+          │ Infrastructure          │
+          │ Security                │
+          │ Billing                 │
+          │ Testing                 │
+          └────────────┬────────────┘
+                       │
+                       ▼
+                 IMPLEMENTATION
+                       │
+              ┌────────┴────────┐
+              ▼                 ▼
+           TESTS          TRACEABILITY
+              │                 │
+              └────────┬────────┘
+                       ▼
+                ACCEPTANCE
+```
+
+The coding agent's job is to **implement this system faithfully**.
+
+It is not authorized to redesign the product, invent missing business behavior, fabricate data, bypass incomplete requirements, or declare functionality complete merely because the UI appears to work.
+
+When ambiguity exists, the implementation must surface it explicitly.
+
+When evidence is missing, Sift must represent the uncertainty.
+
+When an external system fails, Sift must represent the failure.
+
+When research is incomplete, Sift must represent the incompleteness.
+
+That principle is fundamental to both the engineering quality and the credibility of Sift itself.
+
+---
+
+# 101. Required Build Artifacts
+
+The engineering implementation should produce and maintain these artifacts:
+
+```text
+/docs
+├── architecture.md
+├── api.md
+├── database.md
+├── research-engine.md
+├── ai-agents.md
+├── security.md
+├── deployment.md
+├── testing.md
+├── environment.md
+└── traceability.md
+```
+
+The codebase should also contain:
+
+```text
+.env.example
+docker-compose.yml
+README.md
+seed scripts
+database migrations
+CI configuration
+E2E tests
+AI evaluation fixtures
+```
+
+---
+
+# 102. Final Instruction to the Implementation Agent
+
+Build Sift as specified by:
+
+1. **Document 01 — Product PRD**
+2. **Document 02 — Engineering TPRD**
+3. **The Implementation Completeness Protocol contained in this document**
+
+Do not reinterpret the product.
+
+Do not silently simplify requirements.
+
+Do not fabricate external data.
+
+Do not create fake functionality.
+
+Do not hide incomplete implementation.
+
+Do not treat AI-generated output as trusted data without validation.
+
+Do not expose secrets.
+
+Do not bypass authorization.
+
+Do not represent partial research as complete.
+
+Do not introduce a new product behavior merely because it is technically convenient.
+
+When a requirement is ambiguous, preserve the ambiguity explicitly and flag it for resolution.
+
+The implementation is successful only when the resulting software is a functioning, testable, observable, secure implementation of the product defined in Document 01.

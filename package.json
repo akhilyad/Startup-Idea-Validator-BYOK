@@ -1,0 +1,42 @@
+{
+  "name": "startup-idea-validator-byok",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.1.2",
+  "description": "Startup Idea Validator (BYOK) — Stress-test early concepts against actual market friction, distribution bottlenecks, and unit economics before a single line of production code gets written.",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:api": "pnpm --filter @sift/api dev",
+    "dev:web": "pnpm --filter @sift/web dev",
+    "dev:worker": "pnpm --filter @sift/worker dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "vitest run",
+    "db:generate": "pnpm --filter @sift/db generate",
+    "db:migrate": "pnpm --filter @sift/db migrate",
+    "db:push": "pnpm --filter @sift/db push",
+    "db:seed": "pnpm --filter @sift/db seed",
+    "setup": "pnpm install && pnpm db:generate && pnpm db:push && pnpm db:seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2",
+    "vitest": "^2.1.8",
+    "@types/node": "^22.10.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "sharp",
+      "@tailwindcss/oxide",
+      "unrs-resolver"
+    ]
+  }
+}
